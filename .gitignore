@@ -3,6 +3,15 @@
 # dependencies
 node_modules/
 .vscode/
+.vs/
+bin/
+obj/
+
+# .NET / Visual Studio
+**/.vs/
+**/bin/
+**/obj/
+*.user
 
 # Expo
 .expo/
