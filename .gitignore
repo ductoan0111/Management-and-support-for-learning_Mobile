@@ -11,6 +11,7 @@ obj/
 **/.vs/
 **/bin/
 **/obj/
+artifacts/
 *.user
 
 # Expo
