@@ -1,6 +1,165 @@
 @BE_Mobile_HostAddress = http://localhost:5113
 
-GET {{BE_Mobile_HostAddress}}/weatherforecast/
+GET {{BE_Mobile_HostAddress}}/api/admin/students?page=1&pageSize=20
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/admin/students/1
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/dashboard
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/profile
+Accept: application/json
+
+###
+
+PUT {{BE_Mobile_HostAddress}}/api/students/1/profile
+Content-Type: application/json
+
+{
+  "fullName": "Nguyen Van A",
+  "phone": "0901234567",
+  "dateOfBirth": "2004-05-20",
+  "gender": 1,
+  "avatarUrl": null
+}
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/teachers/sections/1/students
+Accept: application/json
+
+###
+
+POST {{BE_Mobile_HostAddress}}/api/admin/students
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "studentCode": "SV001",
+  "academicClassId": null,
+  "majorId": 1,
+  "enrollmentYear": 2026,
+  "status": 1
+}
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/courses
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/schedule
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/exams
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/deadlines
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/assignments/1
+Accept: application/json
+
+###
+
+POST {{BE_Mobile_HostAddress}}/api/students/1/assignments/1/submissions
+Content-Type: application/json
+
+{
+  "textContent": "Bài làm của sinh viên",
+  "fileUrl": null
+}
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/submissions
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/materials
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/grades
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/scores
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/gpa
+Accept: application/json
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/goals
+Accept: application/json
+
+###
+
+POST {{BE_Mobile_HostAddress}}/api/students/1/goals
+Content-Type: application/json
+
+{
+  "title": "Đạt GPA 3.2",
+  "description": "Duy trì tiến độ học tập trong học kỳ này",
+  "goalType": 1,
+  "targetValue": 3.2,
+  "currentValue": 0,
+  "startDate": "2026-09-01",
+  "endDate": "2026-12-31",
+  "status": 1
+}
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/tasks
+Accept: application/json
+
+###
+
+POST {{BE_Mobile_HostAddress}}/api/students/1/tasks
+Content-Type: application/json
+
+{
+  "courseId": null,
+  "title": "Ôn tập chương 1",
+  "description": "Đọc lại slide và làm bài luyện tập",
+  "startAt": "2026-09-10T08:00:00",
+  "dueAt": "2026-09-12T22:00:00",
+  "reminderAt": "2026-09-12T19:00:00",
+  "priority": 2,
+  "status": 1
+}
+
+###
+
+GET {{BE_Mobile_HostAddress}}/api/students/1/announcements
+Accept: application/json
+
+###
+
+POST {{BE_Mobile_HostAddress}}/api/students/1/announcements/1/read
 Accept: application/json
 
 ###

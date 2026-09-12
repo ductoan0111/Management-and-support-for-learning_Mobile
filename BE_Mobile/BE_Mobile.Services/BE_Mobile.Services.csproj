@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BE_Mobile.Data\BE_Mobile.Data.csproj" />
+    <ProjectReference Include="..\BE_Mobile.Models\BE_Mobile.Models.csproj" />
+    <ProjectReference Include="..\BE_Mobile.Repositories\BE_Mobile.Repositories.csproj" />
+  </ItemGroup>
+
+</Project>

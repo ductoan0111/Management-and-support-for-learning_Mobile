@@ -1,3 +1,7 @@
 <Solution>
+  <Project Path="BE_Mobile.Data/BE_Mobile.Data.csproj" />
+  <Project Path="BE_Mobile.Models/BE_Mobile.Models.csproj" />
+  <Project Path="BE_Mobile.Repositories/BE_Mobile.Repositories.csproj" />
+  <Project Path="BE_Mobile.Services/BE_Mobile.Services.csproj" />
   <Project Path="BE_Mobile/BE_Mobile.csproj" />
 </Solution>
