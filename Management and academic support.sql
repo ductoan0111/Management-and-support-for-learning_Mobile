@@ -770,6 +770,46 @@ INNER JOIN dbo.Semesters sem
 GO
 
 /*==============================================================================
+  20B. HỒ SƠ SINH VIÊN
+==============================================================================*/
+
+CREATE OR ALTER VIEW dbo.vw_StudentProfile
+AS
+SELECT
+    s.StudentId,
+    s.UserId,
+    s.StudentCode,
+    u.Username,
+    u.FullName,
+    u.Email,
+    u.Phone,
+    u.DateOfBirth,
+    u.Gender,
+    u.AvatarUrl,
+    u.IsActive,
+    s.AcademicClassId,
+    ac.ClassCode,
+    ac.ClassName,
+    s.MajorId,
+    m.MajorCode,
+    m.MajorName,
+    d.DepartmentId,
+    d.DepartmentCode,
+    d.DepartmentName,
+    s.EnrollmentYear,
+    s.Status
+FROM dbo.Students s
+INNER JOIN dbo.Users u
+    ON u.UserId = s.UserId
+INNER JOIN dbo.Majors m
+    ON m.MajorId = s.MajorId
+INNER JOIN dbo.Departments d
+    ON d.DepartmentId = m.DepartmentId
+LEFT JOIN dbo.AcademicClasses ac
+    ON ac.AcademicClassId = s.AcademicClassId;
+GO
+
+/*==============================================================================
   21. VIEW - THỜI KHÓA BIỂU SINH VIÊN
 ==============================================================================*/
 
@@ -876,6 +916,7 @@ INNER JOIN dbo.GradeComponents gc
 LEFT JOIN dbo.StudentGrades sg
     ON sg.GradeComponentId = gc.GradeComponentId
    AND sg.StudentId = e.StudentId
+WHERE e.Status IN (1,2)
 GROUP BY
     e.StudentId,
     e.SectionId,
@@ -1108,4 +1149,3 @@ GO
 -- SELECT * FROM dbo.vw_StudentAssignmentDeadlines WHERE StudentId = 1;
 -- SELECT * FROM dbo.vw_StudentGPA WHERE StudentId = 1;
 -- SELECT * FROM dbo.vw_TeacherSections WHERE TeacherId = 1;
-
