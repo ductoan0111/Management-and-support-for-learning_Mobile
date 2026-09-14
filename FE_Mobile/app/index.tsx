@@ -1,15 +1,7 @@
-import { Text, View } from "react-native";
+import { Redirect, type Href } from "expo-router";
+
+const loginHref = "/login" as Href;
 
 export default function Index() {
-  return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text>Hello, React Native!</Text>
-    </View>
-  );
+  return <Redirect href={loginHref} />;
 }
