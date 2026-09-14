@@ -73,7 +73,11 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Mật khẩu</Text>
               <View style={styles.inputShell}>
-                <Ionicons name="lock-closed-outline" size={20} color="#64748B" />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#64748B"
+                />
                 <TextInput
                   onChangeText={setPassword}
                   placeholder="Nhập mật khẩu"
@@ -303,3 +307,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
+// Toan day code
