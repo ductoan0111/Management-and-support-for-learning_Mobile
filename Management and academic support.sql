@@ -1139,13 +1139,486 @@ END;
 GO
 
 /*==============================================================================
-  30. GỢI Ý TRUY VẤN KIỂM TRA
+  30. DỮ LIỆU MẪU TEST API
+  Chạy sau khi tạo bảng/view/procedure để có dữ liệu gọi thử API.
+==============================================================================*/
+
+DECLARE @StudentRoleId TINYINT = (SELECT RoleId FROM dbo.Roles WHERE RoleCode = 'STUDENT');
+DECLARE @TeacherRoleId TINYINT = (SELECT RoleId FROM dbo.Roles WHERE RoleCode = 'TEACHER');
+DECLARE @AdminRoleId   TINYINT = (SELECT RoleId FROM dbo.Roles WHERE RoleCode = 'ADMIN');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Departments WHERE DepartmentCode = 'CNTT')
+BEGIN
+    INSERT INTO dbo.Departments(DepartmentCode, DepartmentName, Description)
+    VALUES ('CNTT', N'Công nghệ thông tin', N'Khoa quản lý các ngành công nghệ thông tin');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Departments WHERE DepartmentCode = 'QTKD')
+BEGIN
+    INSERT INTO dbo.Departments(DepartmentCode, DepartmentName, Description)
+    VALUES ('QTKD', N'Quản trị kinh doanh', N'Khoa quản lý các ngành kinh tế và quản trị');
+END;
+
+DECLARE @DeptCnttId INT = (SELECT DepartmentId FROM dbo.Departments WHERE DepartmentCode = 'CNTT');
+DECLARE @DeptQtkdId INT = (SELECT DepartmentId FROM dbo.Departments WHERE DepartmentCode = 'QTKD');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Majors WHERE MajorCode = 'KTPM')
+BEGIN
+    INSERT INTO dbo.Majors(DepartmentId, MajorCode, MajorName, Description)
+    VALUES (@DeptCnttId, 'KTPM', N'Kỹ thuật phần mềm', N'Ngành đào tạo phát triển phần mềm');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Majors WHERE MajorCode = 'HTTT')
+BEGIN
+    INSERT INTO dbo.Majors(DepartmentId, MajorCode, MajorName, Description)
+    VALUES (@DeptCnttId, 'HTTT', N'Hệ thống thông tin', N'Ngành đào tạo hệ thống thông tin');
+END;
+
+DECLARE @MajorKtpmId INT = (SELECT MajorId FROM dbo.Majors WHERE MajorCode = 'KTPM');
+DECLARE @MajorHtttId INT = (SELECT MajorId FROM dbo.Majors WHERE MajorCode = 'HTTT');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.AcademicClasses WHERE ClassCode = 'D21KTPM01')
+BEGIN
+    INSERT INTO dbo.AcademicClasses(MajorId, ClassCode, ClassName, IntakeYear, GraduationYear)
+    VALUES (@MajorKtpmId, 'D21KTPM01', N'Lớp Kỹ thuật phần mềm 01 - Khóa 2021', 2021, 2025);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.AcademicClasses WHERE ClassCode = 'D21HTTT01')
+BEGIN
+    INSERT INTO dbo.AcademicClasses(MajorId, ClassCode, ClassName, IntakeYear, GraduationYear)
+    VALUES (@MajorHtttId, 'D21HTTT01', N'Lớp Hệ thống thông tin 01 - Khóa 2021', 2021, 2025);
+END;
+
+DECLARE @ClassKtpmId INT = (SELECT AcademicClassId FROM dbo.AcademicClasses WHERE ClassCode = 'D21KTPM01');
+DECLARE @ClassHtttId INT = (SELECT AcademicClassId FROM dbo.AcademicClasses WHERE ClassCode = 'D21HTTT01');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Username = 'admin01')
+BEGIN
+    INSERT INTO dbo.Users(RoleId, Username, Email, PasswordHash, FullName, Phone, Gender)
+    VALUES (@AdminRoleId, 'admin01', 'admin01@school.edu.vn', N'test-password-hash', N'Quản trị hệ thống', '0900000000', 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Username = 'gv001')
+BEGIN
+    INSERT INTO dbo.Users(RoleId, Username, Email, PasswordHash, FullName, Phone, Gender)
+    VALUES (@TeacherRoleId, 'gv001', 'gv001@school.edu.vn', N'test-password-hash', N'ThS. Nguyễn Minh Anh', '0901000001', 2);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Username = 'gv002')
+BEGIN
+    INSERT INTO dbo.Users(RoleId, Username, Email, PasswordHash, FullName, Phone, Gender)
+    VALUES (@TeacherRoleId, 'gv002', 'gv002@school.edu.vn', N'test-password-hash', N'TS. Trần Quốc Huy', '0901000002', 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Username = 'sv001')
+BEGIN
+    INSERT INTO dbo.Users(RoleId, Username, Email, PasswordHash, FullName, Phone, DateOfBirth, Gender, AvatarUrl)
+    VALUES (@StudentRoleId, 'sv001', 'sv001@school.edu.vn', N'test-password-hash', N'Nguyễn Văn An', '0912000001', '2003-05-12', 1, N'https://example.com/avatars/sv001.png');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Username = 'sv002')
+BEGIN
+    INSERT INTO dbo.Users(RoleId, Username, Email, PasswordHash, FullName, Phone, DateOfBirth, Gender, AvatarUrl)
+    VALUES (@StudentRoleId, 'sv002', 'sv002@school.edu.vn', N'test-password-hash', N'Lê Thị Bình', '0912000002', '2003-08-20', 2, N'https://example.com/avatars/sv002.png');
+END;
+
+DECLARE @AdminUserId BIGINT = (SELECT UserId FROM dbo.Users WHERE Username = 'admin01');
+DECLARE @Gv1UserId BIGINT = (SELECT UserId FROM dbo.Users WHERE Username = 'gv001');
+DECLARE @Gv2UserId BIGINT = (SELECT UserId FROM dbo.Users WHERE Username = 'gv002');
+DECLARE @Sv1UserId BIGINT = (SELECT UserId FROM dbo.Users WHERE Username = 'sv001');
+DECLARE @Sv2UserId BIGINT = (SELECT UserId FROM dbo.Users WHERE Username = 'sv002');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Teachers WHERE TeacherCode = 'GV001')
+BEGIN
+    INSERT INTO dbo.Teachers(UserId, TeacherCode, DepartmentId, AcademicTitle, Specialization)
+    VALUES (@Gv1UserId, 'GV001', @DeptCnttId, N'Thạc sĩ', N'Lập trình web và di động');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Teachers WHERE TeacherCode = 'GV002')
+BEGIN
+    INSERT INTO dbo.Teachers(UserId, TeacherCode, DepartmentId, AcademicTitle, Specialization)
+    VALUES (@Gv2UserId, 'GV002', @DeptCnttId, N'Tiến sĩ', N'Cơ sở dữ liệu và phân tích dữ liệu');
+END;
+
+DECLARE @Teacher1Id BIGINT = (SELECT TeacherId FROM dbo.Teachers WHERE TeacherCode = 'GV001');
+DECLARE @Teacher2Id BIGINT = (SELECT TeacherId FROM dbo.Teachers WHERE TeacherCode = 'GV002');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Students WHERE StudentCode = 'SV001')
+BEGIN
+    INSERT INTO dbo.Students(UserId, StudentCode, AcademicClassId, MajorId, EnrollmentYear, Status)
+    VALUES (@Sv1UserId, 'SV001', @ClassKtpmId, @MajorKtpmId, 2021, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Students WHERE StudentCode = 'SV002')
+BEGIN
+    INSERT INTO dbo.Students(UserId, StudentCode, AcademicClassId, MajorId, EnrollmentYear, Status)
+    VALUES (@Sv2UserId, 'SV002', @ClassHtttId, @MajorHtttId, 2021, 1);
+END;
+
+DECLARE @Student1Id BIGINT = (SELECT StudentId FROM dbo.Students WHERE StudentCode = 'SV001');
+DECLARE @Student2Id BIGINT = (SELECT StudentId FROM dbo.Students WHERE StudentCode = 'SV002');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Semesters WHERE SemesterCode = 'HK1-2026-2027')
+BEGIN
+    INSERT INTO dbo.Semesters(SemesterCode, SemesterName, AcademicYear, StartDate, EndDate, IsCurrent)
+    VALUES ('HK1-2026-2027', N'Học kỳ 1', '2026-2027', '2026-09-01', '2026-12-31', 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Semesters WHERE SemesterCode = 'HK2-2025-2026')
+BEGIN
+    INSERT INTO dbo.Semesters(SemesterCode, SemesterName, AcademicYear, StartDate, EndDate, IsCurrent)
+    VALUES ('HK2-2025-2026', N'Học kỳ 2', '2025-2026', '2026-01-15', '2026-05-31', 0);
+END;
+
+DECLARE @CurrentSemesterId INT = (SELECT SemesterId FROM dbo.Semesters WHERE SemesterCode = 'HK1-2026-2027');
+DECLARE @PastSemesterId INT = (SELECT SemesterId FROM dbo.Semesters WHERE SemesterCode = 'HK2-2025-2026');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Courses WHERE CourseCode = 'INT101')
+BEGIN
+    INSERT INTO dbo.Courses(DepartmentId, CourseCode, CourseName, Credits, Description)
+    VALUES (@DeptCnttId, 'INT101', N'Lập trình web cơ bản', 3, N'Môn học nhập môn phát triển ứng dụng web');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Courses WHERE CourseCode = 'INT102')
+BEGIN
+    INSERT INTO dbo.Courses(DepartmentId, CourseCode, CourseName, Credits, Description)
+    VALUES (@DeptCnttId, 'INT102', N'Cơ sở dữ liệu', 3, N'Môn học thiết kế và truy vấn cơ sở dữ liệu');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Courses WHERE CourseCode = 'MOB201')
+BEGIN
+    INSERT INTO dbo.Courses(DepartmentId, CourseCode, CourseName, Credits, Description)
+    VALUES (@DeptCnttId, 'MOB201', N'Lập trình mobile', 3, N'Môn học phát triển ứng dụng di động');
+END;
+
+DECLARE @CourseWebId INT = (SELECT CourseId FROM dbo.Courses WHERE CourseCode = 'INT101');
+DECLARE @CourseDbId INT = (SELECT CourseId FROM dbo.Courses WHERE CourseCode = 'INT102');
+DECLARE @CourseMobileId INT = (SELECT CourseId FROM dbo.Courses WHERE CourseCode = 'MOB201');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.CourseSections WHERE SectionCode = 'INT101-2026-HK1-01')
+BEGIN
+    INSERT INTO dbo.CourseSections(CourseId, SemesterId, SectionCode, SectionName, MaxStudents, Status)
+    VALUES (@CourseWebId, @CurrentSemesterId, 'INT101-2026-HK1-01', N'Lập trình web cơ bản - Nhóm 01', 45, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.CourseSections WHERE SectionCode = 'INT102-2026-HK1-01')
+BEGIN
+    INSERT INTO dbo.CourseSections(CourseId, SemesterId, SectionCode, SectionName, MaxStudents, Status)
+    VALUES (@CourseDbId, @CurrentSemesterId, 'INT102-2026-HK1-01', N'Cơ sở dữ liệu - Nhóm 01', 45, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.CourseSections WHERE SectionCode = 'MOB201-2025-HK2-01')
+BEGIN
+    INSERT INTO dbo.CourseSections(CourseId, SemesterId, SectionCode, SectionName, MaxStudents, Status)
+    VALUES (@CourseMobileId, @PastSemesterId, 'MOB201-2025-HK2-01', N'Lập trình mobile - Nhóm 01', 40, 2);
+END;
+
+DECLARE @SectionWebId BIGINT = (SELECT SectionId FROM dbo.CourseSections WHERE SectionCode = 'INT101-2026-HK1-01');
+DECLARE @SectionDbId BIGINT = (SELECT SectionId FROM dbo.CourseSections WHERE SectionCode = 'INT102-2026-HK1-01');
+DECLARE @SectionMobileId BIGINT = (SELECT SectionId FROM dbo.CourseSections WHERE SectionCode = 'MOB201-2025-HK2-01');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.SectionTeachers WHERE SectionId = @SectionWebId AND TeacherId = @Teacher1Id)
+BEGIN
+    INSERT INTO dbo.SectionTeachers(SectionId, TeacherId, IsPrimary)
+    VALUES (@SectionWebId, @Teacher1Id, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.SectionTeachers WHERE SectionId = @SectionDbId AND TeacherId = @Teacher2Id)
+BEGIN
+    INSERT INTO dbo.SectionTeachers(SectionId, TeacherId, IsPrimary)
+    VALUES (@SectionDbId, @Teacher2Id, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.SectionTeachers WHERE SectionId = @SectionMobileId AND TeacherId = @Teacher1Id)
+BEGIN
+    INSERT INTO dbo.SectionTeachers(SectionId, TeacherId, IsPrimary)
+    VALUES (@SectionMobileId, @Teacher1Id, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Enrollments WHERE SectionId = @SectionWebId AND StudentId = @Student1Id)
+BEGIN
+    INSERT INTO dbo.Enrollments(SectionId, StudentId, Status)
+    VALUES (@SectionWebId, @Student1Id, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Enrollments WHERE SectionId = @SectionDbId AND StudentId = @Student1Id)
+BEGIN
+    INSERT INTO dbo.Enrollments(SectionId, StudentId, Status)
+    VALUES (@SectionDbId, @Student1Id, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Enrollments WHERE SectionId = @SectionWebId AND StudentId = @Student2Id)
+BEGIN
+    INSERT INTO dbo.Enrollments(SectionId, StudentId, Status)
+    VALUES (@SectionWebId, @Student2Id, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Enrollments WHERE SectionId = @SectionMobileId AND StudentId = @Student1Id)
+BEGIN
+    INSERT INTO dbo.Enrollments(SectionId, StudentId, Status, FinalScore10, LetterGrade)
+    VALUES (@SectionMobileId, @Student1Id, 2, 8.30, 'B+');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.ClassSchedules WHERE SectionId = @SectionWebId AND DayOfWeek = 2 AND StartTime = '07:30')
+BEGIN
+    INSERT INTO dbo.ClassSchedules(SectionId, DayOfWeek, StartTime, EndTime, Room, Building, EffectiveFrom, EffectiveTo, Note)
+    VALUES (@SectionWebId, 2, '07:30', '09:30', N'A101', N'Nhà A', CAST(DATEADD(DAY, -30, SYSDATETIME()) AS DATE), CAST(DATEADD(DAY, 120, SYSDATETIME()) AS DATE), N'Học lý thuyết');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.ClassSchedules WHERE SectionId = @SectionDbId AND DayOfWeek = 4 AND StartTime = '09:45')
+BEGIN
+    INSERT INTO dbo.ClassSchedules(SectionId, DayOfWeek, StartTime, EndTime, Room, Building, EffectiveFrom, EffectiveTo, Note)
+    VALUES (@SectionDbId, 4, '09:45', '11:45', N'B203', N'Nhà B', CAST(DATEADD(DAY, -30, SYSDATETIME()) AS DATE), CAST(DATEADD(DAY, 120, SYSDATETIME()) AS DATE), N'Thực hành SQL');
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Exams WHERE SectionId = @SectionWebId AND ExamName = N'Kiểm tra giữa kỳ')
+BEGIN
+    INSERT INTO dbo.Exams(SectionId, CreatedByUserId, ExamName, ExamType, ExamDate, StartTime, DurationMinutes, Room, Note)
+    VALUES (@SectionWebId, @Gv1UserId, N'Kiểm tra giữa kỳ', 2, CAST(DATEADD(DAY, 21, SYSDATETIME()) AS DATE), '08:00', 60, N'A101', N'Ôn tập HTML, CSS, JavaScript cơ bản');
+END;
+ELSE
+BEGIN
+    UPDATE dbo.Exams
+    SET ExamDate = CAST(DATEADD(DAY, 21, SYSDATETIME()) AS DATE),
+        StartTime = '08:00',
+        Room = N'A101'
+    WHERE SectionId = @SectionWebId
+      AND ExamName = N'Kiểm tra giữa kỳ';
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Exams WHERE SectionId = @SectionDbId AND ExamName = N'Thi cuối kỳ')
+BEGIN
+    INSERT INTO dbo.Exams(SectionId, CreatedByUserId, ExamName, ExamType, ExamDate, StartTime, DurationMinutes, Room, Note)
+    VALUES (@SectionDbId, @Gv2UserId, N'Thi cuối kỳ', 3, CAST(DATEADD(DAY, 60, SYSDATETIME()) AS DATE), '13:30', 90, N'B203', N'Làm bài trên giấy');
+END;
+ELSE
+BEGIN
+    UPDATE dbo.Exams
+    SET ExamDate = CAST(DATEADD(DAY, 60, SYSDATETIME()) AS DATE),
+        StartTime = '13:30',
+        Room = N'B203'
+    WHERE SectionId = @SectionDbId
+      AND ExamName = N'Thi cuối kỳ';
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Assignments WHERE SectionId = @SectionWebId AND Title = N'Bài tập 0 - Làm quen hệ thống')
+BEGIN
+    INSERT INTO dbo.Assignments(SectionId, CreatedByUserId, Title, Description, AttachmentUrl, OpenAt, DueAt, MaxScore, AllowLateSubmission, IsPublished)
+    VALUES (@SectionWebId, @Gv1UserId, N'Bài tập 0 - Làm quen hệ thống', N'Nộp một đoạn giới thiệu bản thân để kiểm tra chức năng nộp bài.', NULL, DATEADD(DAY, -10, SYSDATETIME()), DATEADD(DAY, -3, SYSDATETIME()), 10.00, 1, 1);
+END;
+ELSE
+BEGIN
+    UPDATE dbo.Assignments
+    SET OpenAt = DATEADD(DAY, -10, SYSDATETIME()),
+        DueAt = DATEADD(DAY, -3, SYSDATETIME()),
+        AllowLateSubmission = 1,
+        IsPublished = 1
+    WHERE SectionId = @SectionWebId
+      AND Title = N'Bài tập 0 - Làm quen hệ thống';
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Assignments WHERE SectionId = @SectionWebId AND Title = N'Bài tập 1 - HTML cơ bản')
+BEGIN
+    INSERT INTO dbo.Assignments(SectionId, CreatedByUserId, Title, Description, AttachmentUrl, OpenAt, DueAt, MaxScore, AllowLateSubmission, IsPublished)
+    VALUES (@SectionWebId, @Gv1UserId, N'Bài tập 1 - HTML cơ bản', N'Tạo trang giới thiệu cá nhân bằng HTML và CSS.', N'https://example.com/files/html-basic.pdf', DATEADD(DAY, -1, SYSDATETIME()), DATEADD(DAY, 7, SYSDATETIME()), 10.00, 0, 1);
+END;
+ELSE
+BEGIN
+    UPDATE dbo.Assignments
+    SET OpenAt = DATEADD(DAY, -1, SYSDATETIME()),
+        DueAt = DATEADD(DAY, 7, SYSDATETIME()),
+        AllowLateSubmission = 0,
+        IsPublished = 1
+    WHERE SectionId = @SectionWebId
+      AND Title = N'Bài tập 1 - HTML cơ bản';
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Assignments WHERE SectionId = @SectionDbId AND Title = N'Bài tập 1 - Mô hình ERD')
+BEGIN
+    INSERT INTO dbo.Assignments(SectionId, CreatedByUserId, Title, Description, AttachmentUrl, OpenAt, DueAt, MaxScore, AllowLateSubmission, IsPublished)
+    VALUES (@SectionDbId, @Gv2UserId, N'Bài tập 1 - Mô hình ERD', N'Vẽ ERD cho hệ thống quản lý học tập.', N'https://example.com/files/erd-assignment.pdf', DATEADD(DAY, -1, SYSDATETIME()), DATEADD(DAY, 10, SYSDATETIME()), 10.00, 0, 1);
+END;
+ELSE
+BEGIN
+    UPDATE dbo.Assignments
+    SET OpenAt = DATEADD(DAY, -1, SYSDATETIME()),
+        DueAt = DATEADD(DAY, 10, SYSDATETIME()),
+        AllowLateSubmission = 0,
+        IsPublished = 1
+    WHERE SectionId = @SectionDbId
+      AND Title = N'Bài tập 1 - Mô hình ERD';
+END;
+
+DECLARE @AssignmentIntroId BIGINT = (SELECT AssignmentId FROM dbo.Assignments WHERE SectionId = @SectionWebId AND Title = N'Bài tập 0 - Làm quen hệ thống');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.AssignmentSubmissions WHERE AssignmentId = @AssignmentIntroId AND StudentId = @Student1Id)
+BEGIN
+    INSERT INTO dbo.AssignmentSubmissions(AssignmentId, StudentId, TextContent, FileUrl, SubmittedAt, IsLate, Status, Score, Feedback, GradedByUserId, GradedAt)
+    VALUES (@AssignmentIntroId, @Student1Id, N'Em là Nguyễn Văn An, sinh viên lớp D21KTPM01.', NULL, DATEADD(DAY, -5, SYSDATETIME()), 0, 2, 9.00, N'Bài nộp rõ ràng, đúng yêu cầu.', @Gv1UserId, DATEADD(DAY, -4, SYSDATETIME()));
+END;
+ELSE
+BEGIN
+    UPDATE dbo.AssignmentSubmissions
+    SET Status = 2,
+        Score = 9.00,
+        Feedback = N'Bài nộp rõ ràng, đúng yêu cầu.',
+        GradedByUserId = @Gv1UserId,
+        GradedAt = DATEADD(DAY, -4, SYSDATETIME())
+    WHERE AssignmentId = @AssignmentIntroId
+      AND StudentId = @Student1Id;
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Materials WHERE SectionId = @SectionWebId AND Title = N'Slide HTML CSS')
+BEGIN
+    INSERT INTO dbo.Materials(SectionId, UploadedByUserId, Title, Description, MaterialType, FileUrl, ExternalUrl, IsVisible)
+    VALUES (@SectionWebId, @Gv1UserId, N'Slide HTML CSS', N'Tài liệu bài giảng tuần 1 và tuần 2.', 'PDF', N'https://example.com/materials/html-css.pdf', NULL, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Materials WHERE SectionId = @SectionDbId AND Title = N'Tài liệu SQL cơ bản')
+BEGIN
+    INSERT INTO dbo.Materials(SectionId, UploadedByUserId, Title, Description, MaterialType, FileUrl, ExternalUrl, IsVisible)
+    VALUES (@SectionDbId, @Gv2UserId, N'Tài liệu SQL cơ bản', N'Tổng hợp cú pháp SELECT, JOIN, GROUP BY.', 'LINK', NULL, N'https://example.com/materials/sql-basic', 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.GradeComponents WHERE SectionId = @SectionWebId AND ComponentName = N'Chuyên cần')
+BEGIN
+    INSERT INTO dbo.GradeComponents(SectionId, ComponentName, WeightPercent, MaxScore, DisplayOrder)
+    VALUES (@SectionWebId, N'Chuyên cần', 10.00, 10.00, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.GradeComponents WHERE SectionId = @SectionWebId AND ComponentName = N'Bài tập')
+BEGIN
+    INSERT INTO dbo.GradeComponents(SectionId, ComponentName, WeightPercent, MaxScore, DisplayOrder)
+    VALUES (@SectionWebId, N'Bài tập', 30.00, 10.00, 2);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.GradeComponents WHERE SectionId = @SectionWebId AND ComponentName = N'Cuối kỳ')
+BEGIN
+    INSERT INTO dbo.GradeComponents(SectionId, ComponentName, WeightPercent, MaxScore, DisplayOrder)
+    VALUES (@SectionWebId, N'Cuối kỳ', 60.00, 10.00, 3);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.GradeComponents WHERE SectionId = @SectionDbId AND ComponentName = N'Chuyên cần')
+BEGIN
+    INSERT INTO dbo.GradeComponents(SectionId, ComponentName, WeightPercent, MaxScore, DisplayOrder)
+    VALUES (@SectionDbId, N'Chuyên cần', 10.00, 10.00, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.GradeComponents WHERE SectionId = @SectionDbId AND ComponentName = N'Bài tập')
+BEGIN
+    INSERT INTO dbo.GradeComponents(SectionId, ComponentName, WeightPercent, MaxScore, DisplayOrder)
+    VALUES (@SectionDbId, N'Bài tập', 30.00, 10.00, 2);
+END;
+
+DECLARE @WebAttendanceId BIGINT = (SELECT GradeComponentId FROM dbo.GradeComponents WHERE SectionId = @SectionWebId AND ComponentName = N'Chuyên cần');
+DECLARE @WebAssignmentGradeId BIGINT = (SELECT GradeComponentId FROM dbo.GradeComponents WHERE SectionId = @SectionWebId AND ComponentName = N'Bài tập');
+DECLARE @WebFinalId BIGINT = (SELECT GradeComponentId FROM dbo.GradeComponents WHERE SectionId = @SectionWebId AND ComponentName = N'Cuối kỳ');
+DECLARE @DbAttendanceId BIGINT = (SELECT GradeComponentId FROM dbo.GradeComponents WHERE SectionId = @SectionDbId AND ComponentName = N'Chuyên cần');
+DECLARE @DbAssignmentGradeId BIGINT = (SELECT GradeComponentId FROM dbo.GradeComponents WHERE SectionId = @SectionDbId AND ComponentName = N'Bài tập');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.StudentGrades WHERE GradeComponentId = @WebAttendanceId AND StudentId = @Student1Id)
+BEGIN
+    INSERT INTO dbo.StudentGrades(GradeComponentId, StudentId, Score, Note, GradedByUserId)
+    VALUES (@WebAttendanceId, @Student1Id, 9.00, N'Đi học đầy đủ', @Gv1UserId);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.StudentGrades WHERE GradeComponentId = @WebAssignmentGradeId AND StudentId = @Student1Id)
+BEGIN
+    INSERT INTO dbo.StudentGrades(GradeComponentId, StudentId, Score, Note, GradedByUserId)
+    VALUES (@WebAssignmentGradeId, @Student1Id, 8.50, N'Bài tập đạt yêu cầu', @Gv1UserId);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.StudentGrades WHERE GradeComponentId = @WebFinalId AND StudentId = @Student1Id)
+BEGIN
+    INSERT INTO dbo.StudentGrades(GradeComponentId, StudentId, Score, Note, GradedByUserId)
+    VALUES (@WebFinalId, @Student1Id, 8.00, N'Điểm dự kiến để test GPA', @Gv1UserId);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.StudentGrades WHERE GradeComponentId = @DbAttendanceId AND StudentId = @Student1Id)
+BEGIN
+    INSERT INTO dbo.StudentGrades(GradeComponentId, StudentId, Score, Note, GradedByUserId)
+    VALUES (@DbAttendanceId, @Student1Id, 10.00, N'Đi học đầy đủ', @Gv2UserId);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.StudentGrades WHERE GradeComponentId = @DbAssignmentGradeId AND StudentId = @Student1Id)
+BEGIN
+    INSERT INTO dbo.StudentGrades(GradeComponentId, StudentId, Score, Note, GradedByUserId)
+    VALUES (@DbAssignmentGradeId, @Student1Id, 7.50, N'Cần cải thiện phần chuẩn hóa dữ liệu', @Gv2UserId);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.StudyGoals WHERE StudentId = @Student1Id AND Title = N'Đạt GPA 3.20')
+BEGIN
+    INSERT INTO dbo.StudyGoals(StudentId, Title, Description, GoalType, TargetValue, CurrentValue, StartDate, EndDate, Status)
+    VALUES (@Student1Id, N'Đạt GPA 3.20', N'Mục tiêu học kỳ hiện tại.', 1, 3.20, 2.80, CAST(SYSDATETIME() AS DATE), CAST(DATEADD(DAY, 100, SYSDATETIME()) AS DATE), 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.StudyGoals WHERE StudentId = @Student1Id AND Title = N'Hoàn thành toàn bộ bài tập đúng hạn')
+BEGIN
+    INSERT INTO dbo.StudyGoals(StudentId, Title, Description, GoalType, TargetValue, CurrentValue, StartDate, EndDate, Status)
+    VALUES (@Student1Id, N'Hoàn thành toàn bộ bài tập đúng hạn', N'Theo dõi deadline trong ứng dụng mobile.', 4, 100.00, 35.00, CAST(SYSDATETIME() AS DATE), CAST(DATEADD(DAY, 90, SYSDATETIME()) AS DATE), 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.StudyTasks WHERE StudentId = @Student1Id AND Title = N'Ôn HTML CSS')
+BEGIN
+    INSERT INTO dbo.StudyTasks(StudentId, CourseId, Title, Description, StartAt, DueAt, ReminderAt, Priority, Status)
+    VALUES (@Student1Id, @CourseWebId, N'Ôn HTML CSS', N'Đọc lại slide và làm bài tập HTML cơ bản.', DATEADD(HOUR, 8, SYSDATETIME()), DATEADD(DAY, 2, SYSDATETIME()), DATEADD(DAY, 1, SYSDATETIME()), 2, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.StudyTasks WHERE StudentId = @Student1Id AND Title = N'Vẽ ERD thư viện')
+BEGIN
+    INSERT INTO dbo.StudyTasks(StudentId, CourseId, Title, Description, StartAt, DueAt, ReminderAt, Priority, Status)
+    VALUES (@Student1Id, @CourseDbId, N'Vẽ ERD thư viện', N'Chuẩn bị bản nháp ERD cho bài tập cơ sở dữ liệu.', DATEADD(HOUR, 10, SYSDATETIME()), DATEADD(DAY, 5, SYSDATETIME()), DATEADD(DAY, 4, SYSDATETIME()), 3, 2);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Announcements WHERE SectionId IS NULL AND Title = N'Chào mừng sinh viên sử dụng hệ thống')
+BEGIN
+    INSERT INTO dbo.Announcements(CreatedByUserId, SectionId, Title, Content, AnnouncementType, PublishedAt, ExpiresAt, IsActive)
+    VALUES (@AdminUserId, NULL, N'Chào mừng sinh viên sử dụng hệ thống', N'Hệ thống quản lý và hỗ trợ học tập đã sẵn sàng cho học kỳ mới.', 1, DATEADD(DAY, -1, SYSDATETIME()), DATEADD(DAY, 60, SYSDATETIME()), 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Announcements WHERE SectionId = @SectionWebId AND Title = N'Nhắc deadline bài tập HTML')
+BEGIN
+    INSERT INTO dbo.Announcements(CreatedByUserId, SectionId, Title, Content, AnnouncementType, PublishedAt, ExpiresAt, IsActive)
+    VALUES (@Gv1UserId, @SectionWebId, N'Nhắc deadline bài tập HTML', N'Các em lưu ý nộp bài tập HTML trước hạn trên hệ thống.', 3, SYSDATETIME(), DATEADD(DAY, 14, SYSDATETIME()), 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Announcements WHERE SectionId = @SectionDbId AND Title = N'Lịch thi cuối kỳ cơ sở dữ liệu')
+BEGIN
+    INSERT INTO dbo.Announcements(CreatedByUserId, SectionId, Title, Content, AnnouncementType, PublishedAt, ExpiresAt, IsActive)
+    VALUES (@Gv2UserId, @SectionDbId, N'Lịch thi cuối kỳ cơ sở dữ liệu', N'Lịch thi cuối kỳ đã được cập nhật trong mục lịch thi.', 4, SYSDATETIME(), DATEADD(DAY, 70, SYSDATETIME()), 1);
+END;
+
+DECLARE @WelcomeAnnouncementId BIGINT =
+(
+    SELECT AnnouncementId
+    FROM dbo.Announcements
+    WHERE SectionId IS NULL
+      AND Title = N'Chào mừng sinh viên sử dụng hệ thống'
+);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.AnnouncementReads WHERE AnnouncementId = @WelcomeAnnouncementId AND UserId = @Sv1UserId)
+BEGIN
+    INSERT INTO dbo.AnnouncementReads(AnnouncementId, UserId, IsRead, ReadAt)
+    VALUES (@WelcomeAnnouncementId, @Sv1UserId, 1, SYSDATETIME());
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.UserDevices WHERE ExpoPushToken = N'ExponentPushToken[sv001-test-token]')
+BEGIN
+    INSERT INTO dbo.UserDevices(UserId, ExpoPushToken, DeviceName, Platform)
+    VALUES (@Sv1UserId, N'ExponentPushToken[sv001-test-token]', N'Pixel Test', 'android');
+END;
+GO
+
+/*==============================================================================
+  31. GỢI Ý TRUY VẤN KIỂM TRA
 ==============================================================================*/
 
 -- SELECT * FROM dbo.Roles;
 -- EXEC dbo.sp_GetAdminDashboard;
--- SELECT * FROM dbo.vw_StudentSections WHERE StudentId = 1;
--- SELECT * FROM dbo.vw_StudentSchedule WHERE StudentId = 1;
--- SELECT * FROM dbo.vw_StudentAssignmentDeadlines WHERE StudentId = 1;
--- SELECT * FROM dbo.vw_StudentGPA WHERE StudentId = 1;
--- SELECT * FROM dbo.vw_TeacherSections WHERE TeacherId = 1;
+-- SELECT StudentId FROM dbo.Students WHERE StudentCode = 'SV001';
+-- SELECT * FROM dbo.vw_StudentProfile WHERE StudentCode = 'SV001';
+-- SELECT * FROM dbo.vw_StudentSections WHERE StudentId = (SELECT StudentId FROM dbo.Students WHERE StudentCode = 'SV001');
+-- SELECT * FROM dbo.vw_StudentSchedule WHERE StudentId = (SELECT StudentId FROM dbo.Students WHERE StudentCode = 'SV001');
+-- SELECT * FROM dbo.vw_StudentAssignmentDeadlines WHERE StudentId = (SELECT StudentId FROM dbo.Students WHERE StudentCode = 'SV001');
+-- SELECT * FROM dbo.vw_StudentGPA WHERE StudentId = (SELECT StudentId FROM dbo.Students WHERE StudentCode = 'SV001');
+-- SELECT * FROM dbo.vw_TeacherSections WHERE TeacherId = (SELECT TeacherId FROM dbo.Teachers WHERE TeacherCode = 'GV001');
