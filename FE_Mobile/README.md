@@ -1,50 +1,34 @@
-# Welcome to your Expo app 👋
+# Study Support Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Ứng dụng mobile dùng cho sinh viên và giảng viên. Admin được tách riêng sang `../FE_Admin_Web`.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Chạy app
 
 ```bash
-npm run reset-project
+npm install
+npm run web
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Hoặc chạy trên thiết bị/emulator:
 
-## Learn more
+```bash
+npm run android
+npm run ios
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Cấu trúc chính
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `app/(auth)`: route đăng nhập và đăng ký.
+- `app/student`: route dành cho sinh viên.
+- `app/teacher`: route dành cho giảng viên.
+- `features/auth`: màn hình xác thực.
+- `features/student`: màn hình nghiệp vụ sinh viên.
+- `features/teacher`: màn hình nghiệp vụ giảng viên.
+- `components`: component dùng chung.
+- `constants/theme.ts`: màu sắc và style dùng chung.
 
-## Join the community
+## Luồng vai trò
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Sinh viên đăng nhập vào `/student`.
+- Giảng viên đăng nhập vào `/teacher`.
+- Admin dùng giao diện web riêng trong `FE_Admin_Web`.
