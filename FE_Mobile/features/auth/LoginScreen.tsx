@@ -1,9 +1,11 @@
+import { loginApi } from "@/api/auth";
 import { colors, shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, router, type Href } from "expo-router";
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -40,14 +42,39 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [role, setRole] = useState<LoginRole>("student");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!identifier.trim() || !password) {
       Alert.alert("Thiếu thông tin", "Vui lòng nhập tài khoản và mật khẩu.");
       return;
     }
 
-    router.replace(role === "student" ? studentHref : teacherHref);
+    try {
+      setIsSubmitting(true);
+      const result = await loginApi({
+        identifier: identifier.trim(),
+        password,
+        role,
+      });
+
+      if (!result.success) {
+        Alert.alert("Đăng nhập thất bại", result.message ?? "Vui lòng kiểm tra lại thông tin.");
+        return;
+      }
+
+      // Xác định route chuyển tiếp theo vai trò
+      const userRole = result.user?.roleCode?.toUpperCase() ?? "";
+      if (userRole.includes("TEACH") || userRole.includes("GV") || role === "teacher") {
+        router.replace(teacherHref);
+      } else {
+        router.replace(studentHref);
+      }
+    } catch (err: any) {
+      Alert.alert("Lỗi", "Không thể xử lý đăng nhập. Vui lòng thử lại.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -175,9 +202,19 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            <Pressable onPress={handleLogin} style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>Đăng nhập</Text>
-              <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
+            <Pressable
+              onPress={handleLogin}
+              disabled={isSubmitting}
+              style={[styles.primaryButton, isSubmitting ? styles.buttonDisabled : null]}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.primaryButtonText}>Đăng nhập</Text>
+                  <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
+                </>
+              )}
             </Pressable>
 
             <View style={styles.switchRow}>
@@ -362,6 +399,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     minHeight: 52,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   primaryButtonText: {
     color: "#FFFFFF",

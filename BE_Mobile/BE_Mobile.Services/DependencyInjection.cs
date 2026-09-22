@@ -13,6 +13,10 @@ public static class DependencyInjection
     {
         services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
 
+        // Auth
+        services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IAuthService, AuthService>();
+
         // Admin
         services.AddScoped<IAdminStudentRepository, AdminStudentRepository>();
         services.AddScoped<IAdminStudentService, AdminStudentService>();
