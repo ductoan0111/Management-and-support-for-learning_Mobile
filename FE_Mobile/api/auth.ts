@@ -1,11 +1,32 @@
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { authSession, type AuthUser, type UserRole } from "@/features/auth/authSession";
 
 const DEFAULT_PORT = "5113";
 
-const getBaseUrl = (): string => {
+const getHostFromExpo = (): string | null => {
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).manifest2?.extra?.expoClient?.hostUri ||
+    (Constants as any).manifest?.debuggerHost;
+
+  if (hostUri) {
+    const ip = hostUri.split(":")[0];
+    if (ip && ip !== "localhost" && ip !== "127.0.0.1") {
+      return ip;
+    }
+  }
+  return null;
+};
+
+export const getBaseUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, "");
+  }
+
+  const expoHost = getHostFromExpo();
+  if (expoHost) {
+    return `http://${expoHost}:${DEFAULT_PORT}`;
   }
 
   // Android Emulator uses 10.0.2.2 to access host machine localhost
@@ -13,7 +34,8 @@ const getBaseUrl = (): string => {
     return `http://10.0.2.2:${DEFAULT_PORT}`;
   }
 
-  return `http://localhost:${DEFAULT_PORT}`;
+  // Fallback to local Wi-Fi IP if running on physical device or simulator
+  return `http://172.20.10.3:${DEFAULT_PORT}`;
 };
 
 export type LoginCredentials = {
