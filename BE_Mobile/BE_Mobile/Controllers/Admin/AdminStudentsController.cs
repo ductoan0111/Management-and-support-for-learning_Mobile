@@ -2,10 +2,12 @@ using BE_Mobile.Contracts.Admin;
 using BE_Mobile.Contracts.Common;
 using BE_Mobile.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BE_Mobile.Controllers.Admin;
 
 [ApiController]
+[Authorize(Roles = "ADMIN")]
 [Route("api/admin/students")]
 public sealed class AdminStudentsController(IAdminStudentService studentService) : ControllerBase
 {
