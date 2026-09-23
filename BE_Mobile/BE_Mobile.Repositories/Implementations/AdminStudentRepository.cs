@@ -86,9 +86,11 @@ public sealed class AdminStudentRepository(IDbConnectionFactory connectionFactor
     {
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
+        using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = """
+        command.Transaction = transaction;
+        command.CommandText = StudentWriteGuardSql + """
             INSERT INTO dbo.Students
                 (UserId, StudentCode, AcademicClassId, MajorId, EnrollmentYear, Status)
             OUTPUT INSERTED.StudentId
@@ -105,6 +107,7 @@ public sealed class AdminStudentRepository(IDbConnectionFactory connectionFactor
             request.Status);
 
         var studentId = Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture);
+        await transaction.CommitAsync(cancellationToken);
         return await FindStudentAsync(studentId, cancellationToken);
     }
 
@@ -115,7 +118,7 @@ public sealed class AdminStudentRepository(IDbConnectionFactory connectionFactor
     {
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
-        using var transaction = connection.BeginTransaction();
+        using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
 
         var userId = await GetStudentUserIdAsync(connection, transaction, studentId, cancellationToken);
         if (userId is null)
@@ -127,7 +130,7 @@ public sealed class AdminStudentRepository(IDbConnectionFactory connectionFactor
         await using (var command = connection.CreateCommand())
         {
             command.Transaction = transaction;
-            command.CommandText = """
+            command.CommandText = StudentWriteGuardSql + """
                 UPDATE dbo.Students
                 SET StudentCode = @StudentCode,
                     AcademicClassId = @AcademicClassId,
@@ -407,6 +410,17 @@ public sealed class AdminStudentRepository(IDbConnectionFactory connectionFactor
         var ordinal = reader.GetOrdinal(columnName);
         return reader.IsDBNull(ordinal) ? null : DateOnly.FromDateTime(reader.GetDateTime(ordinal));
     }
+
+    private const string StudentWriteGuardSql = """
+        IF NOT EXISTS (SELECT 1 FROM dbo.Users u JOIN dbo.Roles r ON r.RoleId = u.RoleId
+            WHERE u.UserId = @UserId AND r.RoleCode = 'STUDENT')
+            THROW 50001, 'User must have the STUDENT role.', 1;
+        IF EXISTS (SELECT 1 FROM dbo.Teachers WHERE UserId = @UserId)
+            THROW 50001, 'User already has a teacher profile.', 1;
+        IF @AcademicClassId IS NOT NULL AND NOT EXISTS
+            (SELECT 1 FROM dbo.AcademicClasses WHERE AcademicClassId = @AcademicClassId AND MajorId = @MajorId)
+            THROW 50001, 'Academic class must belong to the selected major.', 1;
+        """;
 
     private const string StudentSelectSql = """
         SELECT

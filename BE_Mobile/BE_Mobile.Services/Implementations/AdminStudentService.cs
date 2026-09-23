@@ -85,6 +85,10 @@ public sealed class AdminStudentService(IAdminStudentRepository studentRepositor
         {
             return OperationResult<AdminStudentDto>.Conflict("StudentCode or UserId already belongs to another student.");
         }
+        catch (SqlException exception) when (exception.Number == 50001)
+        {
+            return OperationResult<AdminStudentDto>.Conflict(exception.Message);
+        }
         catch (SqlException exception) when (IsConstraintViolation(exception))
         {
             return OperationResult<AdminStudentDto>.BadRequest("Related user, major, or academic class was not found, or a check constraint failed.");
@@ -112,6 +116,10 @@ public sealed class AdminStudentService(IAdminStudentRepository studentRepositor
         catch (SqlException exception) when (IsDuplicateKey(exception))
         {
             return OperationResult<AdminStudentDto>.Conflict("StudentCode already belongs to another student.");
+        }
+        catch (SqlException exception) when (exception.Number == 50001)
+        {
+            return OperationResult<AdminStudentDto>.Conflict(exception.Message);
         }
         catch (SqlException exception) when (IsConstraintViolation(exception))
         {
