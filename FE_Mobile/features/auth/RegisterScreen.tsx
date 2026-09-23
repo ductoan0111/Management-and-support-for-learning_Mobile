@@ -1,8 +1,10 @@
+import { registerStudentApi } from "@/api/auth";
 import { colors, shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { Link, type Href } from "expo-router";
+import { Link, router, type Href } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +18,7 @@ import {
 } from "react-native";
 
 const loginHref = "/login" as Href;
+const studentHref = "/student" as Href;
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState("");
@@ -26,8 +29,9 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (
       !fullName.trim() ||
       !studentCode.trim() ||
@@ -65,10 +69,32 @@ export default function RegisterScreen() {
       return;
     }
 
-    Alert.alert(
-      "Đăng ký",
-      "Form đã sẵn sàng để kết nối API tạo tài khoản sinh viên.",
-    );
+    try {
+      setIsSubmitting(true);
+      const result = await registerStudentApi({
+        fullName,
+        studentCode,
+        email,
+        phone,
+        password,
+      });
+
+      if (!result.success) {
+        Alert.alert("Đăng ký thất bại", result.message ?? "Vui lòng thử lại.");
+        return;
+      }
+
+      Alert.alert("Thành công", "Tạo tài khoản sinh viên thành công!", [
+        {
+          text: "Vào ứng dụng",
+          onPress: () => router.replace(studentHref),
+        },
+      ]);
+    } catch (err: any) {
+      Alert.alert("Lỗi", "Không thể hoàn tất đăng ký. Vui lòng thử lại.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -226,9 +252,19 @@ export default function RegisterScreen() {
               </Text>
             </Pressable>
 
-            <Pressable onPress={handleRegister} style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>Tạo tài khoản</Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+            <Pressable
+              onPress={handleRegister}
+              disabled={isSubmitting}
+              style={[styles.primaryButton, isSubmitting ? styles.buttonDisabled : null]}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.primaryButtonText}>Tạo tài khoản</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+                </>
+              )}
             </Pressable>
 
             <View style={styles.switchRow}>
@@ -369,6 +405,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     minHeight: 52,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   primaryButtonText: {
     color: "#FFFFFF",

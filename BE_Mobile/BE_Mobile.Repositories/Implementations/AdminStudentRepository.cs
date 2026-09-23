@@ -158,6 +158,8 @@ public sealed class AdminStudentRepository(IDbConnectionFactory connectionFactor
         return await FindStudentAsync(studentId, cancellationToken);
     }
 
+    //Xóa sinh viên
+
     public async Task<bool> DeleteStudentAsync(long studentId, CancellationToken cancellationToken)
     {
         await using var connection = connectionFactory.CreateConnection();
