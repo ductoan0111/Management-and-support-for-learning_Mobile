@@ -1,432 +1,343 @@
-import {
-  BookOpen,
-  GraduationCap,
-  LayoutDashboard,
-  Loader2,
-  Plus,
-  RefreshCw,
-  Search,
-  Users,
-  X,
-} from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
-  createStudent,
-  fallbackStudents,
-  getStudents,
-} from "./api/adminStudents";
+  ADMIN_SESSION_KEY,
+  AdminApiError,
+  createAdminResource,
+  deleteAdminResource,
+  getAdminRoles,
+  getAdminStatistics,
+  listAdminResource,
+  updateAdminResource,
+} from "./api/admin";
+import { AdminLayout } from "./components/admin/AdminLayout";
+import { Dashboard } from "./components/admin/Dashboard";
+import { LoginScreen } from "./components/admin/LoginScreen";
+import { NoticeBanner } from "./components/admin/NoticeBanner";
+import { ResourceDialog } from "./components/admin/ResourceDialog";
+import { ResourceTable } from "./components/admin/ResourceTable";
+import { emptyLookups } from "./config/adminOptions";
+import { resourceConfigs } from "./config/adminResources";
 import type {
-  AdminStudent,
-  CreateAdminStudentRequest,
-  StudentFilters,
-} from "./types/adminStudent";
+  AdminFormState,
+  AdminRecord,
+  AdminRole,
+  AdminSession,
+  AdminStatistics,
+  DialogState,
+  LookupState,
+  Notice,
+  PagedResult,
+} from "./types/admin";
+import {
+  getVisibleFields,
+  hasMissingRequiredField,
+  makePayload,
+  rowToForm,
+} from "./utils/adminForms";
+import { readStoredSession } from "./utils/adminSession";
 
-const navItems = [
-  { label: "Sinh viên", active: true, icon: Users },
-  { label: "Giảng viên", active: false, icon: GraduationCap },
-  { label: "Lớp học", active: false, icon: BookOpen },
-  { label: "Thống kê", active: false, icon: LayoutDashboard },
-];
+const PAGE_SIZE = 20;
 
-const initialForm: CreateAdminStudentRequest = {
-  userId: 0,
-  studentCode: "",
-  academicClassId: null,
-  majorId: 0,
-  enrollmentYear: new Date().getFullYear(),
-  status: 1,
+const initialPageInfo: PagedResult<AdminRecord> = {
+  items: [],
+  page: 1,
+  pageSize: PAGE_SIZE,
+  totalCount: 0,
+  totalPages: 1,
 };
 
-function isActiveStudent(student: AdminStudent) {
-  return student.isActive && student.status !== 0;
-}
-
-function statusLabel(student: AdminStudent) {
-  return isActiveStudent(student) ? "Đang học" : "Tạm khóa";
-}
-
-function normalizeText(value: string | number | null | undefined) {
-  return String(value ?? "").toLowerCase().trim();
-}
-
-function filterStudents(students: AdminStudent[], filters: StudentFilters) {
-  const search = normalizeText(filters.search);
-
-  return students.filter((student) => {
-    const matchesSearch =
-      !search ||
-      normalizeText(student.studentCode).includes(search) ||
-      normalizeText(student.fullName).includes(search) ||
-      normalizeText(student.email).includes(search);
-
-    const matchesStatus =
-      !filters.status || String(student.status) === filters.status;
-
-    return matchesSearch && matchesStatus;
-  });
-}
-
 export default function App() {
-  const [students, setStudents] = useState<AdminStudent[]>(fallbackStudents);
-  const [filters, setFilters] = useState<StudentFilters>({
-    search: "",
-    status: "",
-  });
-  const [form, setForm] = useState<CreateAdminStudentRequest>(initialForm);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [session, setSession] = useState<AdminSession | null>(() => readStoredSession());
+  const [activeKey, setActiveKey] = useState("dashboard");
+  const [lookups, setLookups] = useState<LookupState>(emptyLookups);
+  const [statistics, setStatistics] = useState<AdminStatistics | null>(null);
+  const [rows, setRows] = useState<AdminRecord[]>([]);
+  const [pageInfo, setPageInfo] = useState<PagedResult<AdminRecord>>(initialPageInfo);
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [form, setForm] = useState<AdminFormState>({});
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const visibleStudents = useMemo(
-    () => filterStudents(students, filters),
-    [students, filters],
+  const activeResource = useMemo(
+    () => resourceConfigs.find((resource) => resource.key === activeKey) ?? null,
+    [activeKey],
   );
 
-  const activeCount = students.filter(isActiveStudent).length;
-  const inactiveCount = students.length - activeCount;
-
-  const loadStudents = async () => {
-    setIsLoading(true);
+  const logout = () => {
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    setSession(null);
+    setActiveKey("dashboard");
+    setRows([]);
+    setStatistics(null);
     setNotice(null);
+  };
 
+  const handleError = (error: unknown) => {
+    if (error instanceof AdminApiError && error.status === 401) {
+      logout();
+      return;
+    }
+
+    setNotice({
+      tone: "error",
+      message: error instanceof Error ? error.message : "Có lỗi khi kết nối API.",
+    });
+  };
+
+  const loadLookups = async (token: string) => {
+    const settled = await Promise.allSettled([
+      getAdminRoles(token),
+      listAdminResource("/api/admin/users", token, { page: 1, pageSize: 100 }),
+      listAdminResource("/api/admin/departments", token, { page: 1, pageSize: 100 }),
+      listAdminResource("/api/admin/majors", token, { page: 1, pageSize: 100 }),
+      listAdminResource("/api/admin/academic-classes", token, { page: 1, pageSize: 100 }),
+      listAdminResource("/api/admin/courses", token, { page: 1, pageSize: 100 }),
+      listAdminResource("/api/admin/semesters", token, { page: 1, pageSize: 100 }),
+    ]);
+
+    const roles = settled[0].status === "fulfilled" ? settled[0].value : [];
+    const getItems = (index: number) =>
+      settled[index].status === "fulfilled"
+        ? (settled[index].value as PagedResult<AdminRecord>).items
+        : [];
+
+    setLookups({
+      roles: (roles as AdminRole[]).map((role) => ({ ...role })),
+      users: getItems(1),
+      departments: getItems(2),
+      majors: getItems(3),
+      academicClasses: getItems(4),
+      courses: getItems(5),
+      semesters: getItems(6),
+    });
+
+    const rejected = settled.find((result) => result.status === "rejected");
+    if (rejected) {
+      throw rejected.reason;
+    }
+  };
+
+  const loadStatistics = async (token: string) => {
+    setIsDashboardLoading(true);
     try {
-      const result = await getStudents(filters);
-      setStudents(result.items);
+      setStatistics(await getAdminStatistics(token));
     } catch (error) {
-      setStudents(fallbackStudents);
-      setNotice(
-        error instanceof Error
-          ? `${error.message} Đang hiển thị dữ liệu mẫu.`
-          : "Đang hiển thị dữ liệu mẫu.",
-      );
+      handleError(error);
     } finally {
-      setIsLoading(false);
+      setIsDashboardLoading(false);
     }
   };
 
   useEffect(() => {
-    loadStudents();
+    if (!session) return;
+
+    void loadLookups(session.accessToken).catch(handleError);
+    void loadStatistics(session.accessToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [session?.accessToken]);
+
+  useEffect(() => {
+    setSearch("");
+    setFilters({});
+    setPage(1);
+    setDialog(null);
+    setNotice(null);
+  }, [activeKey]);
+
+  useEffect(() => {
+    if (!session || !activeResource) return;
+
+    let ignored = false;
+    setIsLoading(true);
+    listAdminResource(activeResource.path, session.accessToken, {
+      search: search.trim() || undefined,
+      page,
+      pageSize: PAGE_SIZE,
+      ...filters,
+    })
+      .then((result) => {
+        if (ignored) return;
+        setRows(result.items);
+        setPageInfo(result);
+      })
+      .catch((error) => {
+        if (!ignored) handleError(error);
+      })
+      .finally(() => {
+        if (!ignored) setIsLoading(false);
+      });
+
+    return () => {
+      ignored = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeResource, filters, page, refreshKey, search, session?.accessToken]);
+
+  const refresh = () => {
+    if (!session) return;
+
+    setNotice(null);
+    void loadLookups(session.accessToken).catch(handleError);
+    void loadStatistics(session.accessToken);
+    setRefreshKey((value) => value + 1);
+  };
+
+  const openCreateDialog = () => {
+    if (!activeResource) return;
+    setForm({ ...activeResource.defaultValues });
+    setDialog({ mode: "create", row: null });
+  };
+
+  const openEditDialog = (row: AdminRecord) => {
+    if (!activeResource) return;
+    setForm(rowToForm(activeResource, row));
+    setDialog({ mode: "edit", row });
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!session || !activeResource || !dialog) return;
 
-    if (!form.userId || !form.studentCode.trim() || !form.majorId) {
-      setNotice("Vui lòng nhập User ID, mã sinh viên và mã ngành.");
+    const visibleFields = getVisibleFields(activeResource, dialog.mode);
+    const missingField = visibleFields.find((field) =>
+      hasMissingRequiredField(field, form[field.key]),
+    );
+
+    if (missingField) {
+      setNotice({ tone: "error", message: `Vui lòng nhập ${missingField.label}.` });
       return;
     }
 
+    const payload = makePayload(activeResource, form, dialog.mode);
     setIsSaving(true);
     setNotice(null);
 
     try {
-      await createStudent({
-        ...form,
-        studentCode: form.studentCode.trim().toUpperCase(),
-        academicClassId: form.academicClassId || null,
-      });
-      setForm(initialForm);
-      setIsDialogOpen(false);
-      await loadStudents();
-      setNotice("Đã thêm sinh viên thành công.");
+      if (dialog.mode === "create") {
+        await createAdminResource(activeResource.path, session.accessToken, payload);
+        setNotice({
+          tone: "success",
+          message: `Đã thêm ${activeResource.title.toLowerCase()}.`,
+        });
+      } else if (dialog.row) {
+        await updateAdminResource(
+          activeResource.path,
+          session.accessToken,
+          dialog.row[activeResource.idKey],
+          payload,
+        );
+        setNotice({
+          tone: "success",
+          message: `Đã cập nhật ${activeResource.title.toLowerCase()}.`,
+        });
+      }
+
+      setDialog(null);
+      setRefreshKey((value) => value + 1);
+      void loadLookups(session.accessToken).catch(handleError);
+      void loadStatistics(session.accessToken);
     } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Chưa kết nối được backend admin.",
-      );
+      handleError(error);
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleDelete = async (row: AdminRecord) => {
+    if (!session || !activeResource || activeResource.canDelete === false) return;
+
+    const confirmed = window.confirm(`Xóa ${activeResource.title.toLowerCase()} này?`);
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    setNotice(null);
+
+    try {
+      await deleteAdminResource(
+        activeResource.path,
+        session.accessToken,
+        row[activeResource.idKey],
+      );
+      setNotice({
+        tone: "success",
+        message: `Đã xóa ${activeResource.title.toLowerCase()}.`,
+      });
+      setRefreshKey((value) => value + 1);
+      void loadLookups(session.accessToken).catch(handleError);
+      void loadStatistics(session.accessToken);
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!session) {
+    return <LoginScreen onLogin={setSession} />;
+  }
+
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">SS</div>
-          <div>
-            <strong>Study Support</strong>
-            <span>Admin Web</span>
-          </div>
-        </div>
+    <>
+      <AdminLayout
+        activeKey={activeKey}
+        activeResource={activeResource}
+        isBusy={isLoading || isDashboardLoading}
+        onCreate={openCreateDialog}
+        onLogout={logout}
+        onRefresh={refresh}
+        onSelect={setActiveKey}
+        session={session}
+      >
+        <NoticeBanner notice={notice} />
 
-        <nav className="nav-list" aria-label="Admin navigation">
-          {navItems.map(({ active, icon: Icon, label }) => (
-            <button
-              className={`nav-item ${active ? "active" : ""}`}
-              key={label}
-              type="button"
-            >
-              <Icon size={18} aria-hidden="true" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+        {!activeResource ? (
+          <Dashboard isLoading={isDashboardLoading} statistics={statistics} />
+        ) : (
+          <ResourceTable
+            filters={filters}
+            isLoading={isLoading}
+            isSaving={isSaving}
+            lookups={lookups}
+            onDelete={(row) => void handleDelete(row)}
+            onEdit={openEditDialog}
+            onFilterChange={(key, value) => {
+              setFilters((current) => ({ ...current, [key]: value }));
+              setPage(1);
+            }}
+            onPageChange={setPage}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            pageInfo={pageInfo}
+            resource={activeResource}
+            rows={rows}
+            search={search}
+          />
+        )}
+      </AdminLayout>
 
-      <main className="main">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Quản trị hệ thống</p>
-            <h1>Quản lý sinh viên</h1>
-          </div>
-          <div className="topbar-actions">
-            <button
-              className="icon-button"
-              disabled={isLoading}
-              onClick={loadStudents}
-              title="Tải lại"
-              type="button"
-            >
-              <RefreshCw size={18} aria-hidden="true" />
-            </button>
-            <button
-              className="primary-button"
-              onClick={() => setIsDialogOpen(true)}
-              type="button"
-            >
-              <Plus size={18} aria-hidden="true" />
-              <span>Thêm sinh viên</span>
-            </button>
-          </div>
-        </header>
-
-        <section className="summary-grid" aria-label="Tổng quan sinh viên">
-          <SummaryCard label="Tổng sinh viên" value={students.length} />
-          <SummaryCard label="Đang học" value={activeCount} tone="success" />
-          <SummaryCard label="Tạm khóa" value={inactiveCount} tone="warning" />
-        </section>
-
-        {notice ? <div className="notice">{notice}</div> : null}
-
-        <section className="panel">
-          <div className="panel-toolbar">
-            <label className="search-box">
-              <Search size={18} aria-hidden="true" />
-              <input
-                onChange={(event) =>
-                  setFilters((current) => ({
-                    ...current,
-                    search: event.target.value,
-                  }))
-                }
-                placeholder="Tìm theo tên, mã sinh viên hoặc email"
-                type="search"
-                value={filters.search}
-              />
-            </label>
-
-            <select
-              aria-label="Lọc trạng thái"
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  status: event.target.value,
-                }))
-              }
-              value={filters.status}
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="1">Đang học</option>
-              <option value="0">Tạm khóa</option>
-            </select>
-          </div>
-
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Mã sinh viên</th>
-                  <th>Họ tên</th>
-                  <th>Email</th>
-                  <th>Lớp</th>
-                  <th>Ngành</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={6}>
-                      <div className="table-state">
-                        <Loader2 className="spin" size={20} aria-hidden="true" />
-                        <span>Đang tải dữ liệu...</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : null}
-
-                {!isLoading && visibleStudents.length === 0 ? (
-                  <tr>
-                    <td colSpan={6}>
-                      <div className="table-state">Không có sinh viên phù hợp.</div>
-                    </td>
-                  </tr>
-                ) : null}
-
-                {!isLoading
-                  ? visibleStudents.map((student) => (
-                      <tr key={student.studentId}>
-                        <td>
-                          <strong>{student.studentCode}</strong>
-                        </td>
-                        <td>{student.fullName}</td>
-                        <td>{student.email}</td>
-                        <td>{student.className ?? "-"}</td>
-                        <td>{student.majorName}</td>
-                        <td>
-                          <span
-                            className={`status ${
-                              isActiveStudent(student) ? "active" : "inactive"
-                            }`}
-                          >
-                            {statusLabel(student)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  : null}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
-
-      {isDialogOpen ? (
-        <div className="dialog-backdrop" role="presentation">
-          <form className="dialog-card" onSubmit={handleSubmit}>
-            <div className="dialog-header">
-              <h2>Thêm sinh viên</h2>
-              <button
-                className="icon-button"
-                onClick={() => setIsDialogOpen(false)}
-                title="Đóng"
-                type="button"
-              >
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-
-            <FormNumberField
-              label="User ID"
-              min={1}
-              onChange={(value) =>
-                setForm((current) => ({ ...current, userId: value }))
-              }
-              placeholder="101"
-              value={form.userId}
-            />
-            <label>
-              Mã sinh viên
-              <input
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    studentCode: event.target.value,
-                  }))
-                }
-                placeholder="SV001"
-                value={form.studentCode}
-              />
-            </label>
-            <FormNumberField
-              label="Mã lớp học"
-              min={1}
-              onChange={(value) =>
-                setForm((current) => ({
-                  ...current,
-                  academicClassId: value || null,
-                }))
-              }
-              placeholder="1"
-              value={form.academicClassId ?? 0}
-            />
-            <FormNumberField
-              label="Mã ngành"
-              min={1}
-              onChange={(value) =>
-                setForm((current) => ({ ...current, majorId: value }))
-              }
-              placeholder="1"
-              value={form.majorId}
-            />
-            <FormNumberField
-              label="Năm nhập học"
-              min={2000}
-              onChange={(value) =>
-                setForm((current) => ({ ...current, enrollmentYear: value }))
-              }
-              placeholder="2026"
-              value={form.enrollmentYear}
-            />
-
-            <div className="dialog-actions">
-              <button
-                className="secondary-button"
-                onClick={() => setIsDialogOpen(false)}
-                type="button"
-              >
-                Hủy
-              </button>
-              <button className="primary-button" disabled={isSaving} type="submit">
-                {isSaving ? (
-                  <Loader2 className="spin" size={18} aria-hidden="true" />
-                ) : (
-                  <Plus size={18} aria-hidden="true" />
-                )}
-                <span>Lưu</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-type SummaryCardProps = {
-  label: string;
-  value: number;
-  tone?: "default" | "success" | "warning";
-};
-
-function SummaryCard({ label, tone = "default", value }: SummaryCardProps) {
-  return (
-    <article className={`summary-card ${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </article>
-  );
-}
-
-type FormNumberFieldProps = {
-  label: string;
-  min: number;
-  onChange: (value: number) => void;
-  placeholder: string;
-  value: number;
-};
-
-function FormNumberField({
-  label,
-  min,
-  onChange,
-  placeholder,
-  value,
-}: FormNumberFieldProps) {
-  return (
-    <label>
-      {label}
-      <input
-        min={min}
-        onChange={(event) => onChange(Number(event.target.value))}
-        placeholder={placeholder}
-        type="number"
-        value={value || ""}
+      <ResourceDialog
+        dialog={dialog}
+        form={form}
+        isSaving={isSaving}
+        lookups={lookups}
+        onChange={(key, value) =>
+          setForm((current) => ({
+            ...current,
+            [key]: value,
+          }))
+        }
+        onClose={() => setDialog(null)}
+        onSubmit={handleSubmit}
+        resource={activeResource}
       />
-    </label>
+    </>
   );
 }
