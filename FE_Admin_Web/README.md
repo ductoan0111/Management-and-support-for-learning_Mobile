@@ -1,6 +1,6 @@
 # FE Admin Web
 
-Giao diện ReactJS + TypeScript dành riêng cho admin. Phần mobile trong `FE_Mobile` chỉ phục vụ sinh viên và giảng viên.
+Giao diện React + TypeScript dành cho quản trị viên. Ứng dụng có màn đăng nhập admin, gửi Bearer token cho API và hỗ trợ quản lý các danh mục chính: tài khoản, sinh viên, giảng viên, khoa, ngành, lớp hành chính, môn học, học kỳ và lớp học phần.
 
 ## Chạy giao diện
 
@@ -15,8 +15,14 @@ npm run dev
 npm run build
 ```
 
-Mặc định web admin gọi backend ở `https://localhost:7138`. Nếu backend chạy ở địa chỉ khác, tạo file `.env` và đặt:
+Mặc định web admin gọi backend ở `http://localhost:5113`. Nếu backend chạy ở địa chỉ khác, tạo file `.env` và đặt:
 
 ```bash
-VITE_API_BASE_URL=https://localhost:7138
+VITE_API_BASE_URL=http://localhost:5113
+```
+
+Backend admin cần chạy trước khi đăng nhập:
+
+```bash
+dotnet run --project ../BE_Mobile/BE_Mobile --launch-profile http
 ```
