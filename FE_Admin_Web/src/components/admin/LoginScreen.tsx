@@ -1,6 +1,6 @@
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { ADMIN_SESSION_KEY, API_BASE_URL, loginAdmin } from "../../api/admin";
+import { ADMIN_SESSION_KEY, loginAdmin } from "../../api/admin";
 import type { AdminSession } from "../../types/admin";
 
 type LoginScreenProps = {
@@ -36,7 +36,6 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           <div className="brand-mark">SS</div>
           <div>
             <strong>Study Support</strong>
-            <span>Admin Web</span>
           </div>
         </div>
 
@@ -78,7 +77,6 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           </button>
         </form>
 
-        <p className="api-note">API: {API_BASE_URL}</p>
       </section>
     </main>
   );

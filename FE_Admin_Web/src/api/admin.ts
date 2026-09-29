@@ -175,6 +175,18 @@ export async function getAdminRoles(token: string): Promise<AdminRole[]> {
   return request<AdminRole[]>("/api/admin/roles", token);
 }
 
+export function setAdminUserRole(token: string, id: number, roleId: number) {
+  return request<AdminRecord>(`/api/admin/users/${id}/role`, token, {
+    method: "PUT", body: JSON.stringify({ roleId }),
+  });
+}
+
+export function resetAdminUserPassword(token: string, id: number, password: string) {
+  return request<void>(`/api/admin/users/${id}/password`, token, {
+    method: "PUT", body: JSON.stringify({ password }),
+  });
+}
+
 export async function getAdminStatistics(
   token: string,
 ): Promise<AdminStatistics> {

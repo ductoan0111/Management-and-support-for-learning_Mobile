@@ -555,6 +555,23 @@ td {
   justify-content: flex-end;
 }
 
+.action-modal {
+  color: var(--ink);
+  width: min(900px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  margin: auto;
+}
+
+.action-modal:not([open]) { display: none; }
+
+.action-modal::backdrop { background: rgb(0 0 0 / 50%); }
+.action-modal h2 { font-size: 1.2rem; overflow-wrap: anywhere; }
+.access-form { display: grid; gap: 16px; margin: 16px 0; }
+.access-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 14px; }
+.action-modal .table-wrap { max-width: 100%; }
+.row-actions { flex-wrap: wrap; }
+
 .login-page {
   align-items: center;
   background:
