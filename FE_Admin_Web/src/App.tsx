@@ -15,6 +15,8 @@ import { LoginScreen } from "./components/admin/LoginScreen";
 import { NoticeBanner } from "./components/admin/NoticeBanner";
 import { ResourceDialog } from "./components/admin/ResourceDialog";
 import { ResourceTable } from "./components/admin/ResourceTable";
+import { UserAccessDialog } from "./components/admin/UserAccessDialog";
+import { SectionMembersDialog } from "./components/admin/SectionMembersDialog";
 import { emptyLookups } from "./config/adminOptions";
 import { resourceConfigs } from "./config/adminResources";
 import type {
@@ -63,6 +65,7 @@ export default function App() {
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [form, setForm] = useState<AdminFormState>({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [action, setAction] = useState<{ row: AdminRecord; mode: "role" | "password" | "teachers" | "students" } | null>(null);
 
   const activeResource = useMemo(
     () => resourceConfigs.find((resource) => resource.key === activeKey) ?? null,
@@ -70,6 +73,7 @@ export default function App() {
   );
 
   const logout = () => {
+    setAction(null);
     localStorage.removeItem(ADMIN_SESSION_KEY);
     setSession(null);
     setActiveKey("dashboard");
@@ -148,6 +152,7 @@ export default function App() {
     setPage(1);
     setDialog(null);
     setNotice(null);
+    setAction(null);
   }, [activeKey]);
 
   useEffect(() => {
@@ -306,6 +311,7 @@ export default function App() {
             lookups={lookups}
             onDelete={(row) => void handleDelete(row)}
             onEdit={openEditDialog}
+            onAction={(row, mode) => setAction({ row, mode })}
             onFilterChange={(key, value) => {
               setFilters((current) => ({ ...current, [key]: value }));
               setPage(1);
@@ -338,6 +344,16 @@ export default function App() {
         onSubmit={handleSubmit}
         resource={activeResource}
       />
+      {action && (action.mode === "role" || action.mode === "password") && <UserAccessDialog
+        row={action.row} mode={action.mode} roles={lookups.roles} token={session.accessToken}
+        onClose={() => setAction(null)} onUnauthorized={logout}
+        onSaved={() => {
+          if (Number(action.row.userId) === session.user.userId) { logout(); return; }
+          setAction(null); refresh(); setNotice({ tone: "success", message: "Đã cập nhật tài khoản." });
+        }} />}
+      {action && (action.mode === "teachers" || action.mode === "students") && <SectionMembersDialog
+        row={action.row} kind={action.mode} token={session.accessToken}
+        onClose={() => setAction(null)} onUnauthorized={logout} onChanged={refresh} />}
     </>
   );
 }
