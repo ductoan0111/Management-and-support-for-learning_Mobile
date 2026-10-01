@@ -6,7 +6,6 @@ import type { ComponentProps } from "react";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -43,10 +42,13 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(true);
   const [role, setRole] = useState<LoginRole>("student");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   const handleLogin = async () => {
+    if (isSubmitting) return;
+    setLoginError("");
     if (!identifier.trim() || !password) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập tài khoản và mật khẩu.");
+      setLoginError("Vui lòng nhập tài khoản và mật khẩu.");
       return;
     }
 
@@ -59,7 +61,7 @@ export default function LoginScreen() {
       });
 
       if (!result.success) {
-        Alert.alert("Đăng nhập thất bại", result.message ?? "Vui lòng kiểm tra lại thông tin.");
+        setLoginError(result.message ?? "Vui lòng kiểm tra lại thông tin.");
         return;
       }
 
@@ -70,8 +72,8 @@ export default function LoginScreen() {
       } else {
         router.replace(studentHref);
       }
-    } catch (err: any) {
-      Alert.alert("Lỗi", "Không thể xử lý đăng nhập. Vui lòng thử lại.");
+    } catch {
+      setLoginError("Không thể xử lý đăng nhập. Vui lòng thử lại.");
     } finally {
       setIsSubmitting(false);
     }
@@ -99,6 +101,7 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.form}>
+            {!!loginError && <Text accessibilityRole="alert" style={{color: colors.danger, marginBottom: 14}}>{loginError}</Text>}
             <Text style={styles.groupTitle}>Vai trò</Text>
             <View style={styles.roleGrid}>
               {roleOptions.map((item) => {
