@@ -23,10 +23,10 @@ public sealed class AuthService(IAuthRepository authRepository) : IAuthService
         if (!string.IsNullOrWhiteSpace(request.Role))
         {
             var requestedRole = request.Role.Trim().ToLowerInvariant();
-            if (requestedRole == "student" && user.StudentId is null && !user.RoleCode.Equals("STUDENT", StringComparison.OrdinalIgnoreCase))
+            if (requestedRole == "student" && (user.StudentId is null || !user.RoleCode.Equals("STUDENT", StringComparison.OrdinalIgnoreCase)))
                 return OperationResult<AuthUserDto>.BadRequest("Tài khoản này không phải là tài khoản Sinh viên.");
 
-            if (requestedRole == "teacher" && user.TeacherId is null && !user.RoleCode.Equals("TEACHER", StringComparison.OrdinalIgnoreCase))
+            if (requestedRole == "teacher" && (user.TeacherId is null || !user.RoleCode.Equals("TEACHER", StringComparison.OrdinalIgnoreCase)))
                 return OperationResult<AuthUserDto>.BadRequest("Tài khoản này không phải là tài khoản Giảng viên.");
         }
 

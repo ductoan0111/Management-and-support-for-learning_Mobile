@@ -6,6 +6,11 @@ namespace BE_Mobile.Services.Interfaces;
 public interface ITeacherGradeService
 {
     Task<ActionResult<IReadOnlyList<TeacherGradeComponentDto>>> GetGradeComponents(long teacherId, long sectionId, CancellationToken cancellationToken);
+    Task<ActionResult<TeacherGradeComponentDto>> CreateGradeComponent(long teacherId, long sectionId, SaveGradeComponentRequest request, CancellationToken cancellationToken);
+    Task<ActionResult<TeacherGradeComponentDto>> UpdateGradeComponent(long teacherId, long sectionId, long componentId, SaveGradeComponentRequest request, CancellationToken cancellationToken);
+    Task<IActionResult> DeleteGradeComponent(long teacherId, long sectionId, long componentId, CancellationToken cancellationToken);
     Task<ActionResult<IReadOnlyList<TeacherStudentGradeDto>>> GetGrades(long teacherId, long sectionId, long? componentId, CancellationToken cancellationToken);
     Task<ActionResult<TeacherStudentGradeDto>> UpsertStudentGrade(long teacherId, long sectionId, long studentId, UpsertStudentGradeRequest request, CancellationToken cancellationToken);
+    Task<ActionResult<TeacherGradeOverviewDto>> GetGradeOverview(long teacherId, long sectionId, CancellationToken cancellationToken);
+    Task<ActionResult<TeacherGradeOverviewDto>> FinalizeGrades(long teacherId, long sectionId, CancellationToken cancellationToken);
 }

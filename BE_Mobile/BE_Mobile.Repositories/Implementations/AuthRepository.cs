@@ -4,6 +4,7 @@ using System.Text;
 using BE_Mobile.Contracts.Auth;
 using BE_Mobile.Data;
 using BE_Mobile.Repositories.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 
 namespace BE_Mobile.Repositories.Implementations;
@@ -73,7 +74,7 @@ public sealed class AuthRepository(IDbConnectionFactory connectionFactory) : IAu
         SqlRepositoryHelper.AddParameter(updateCmd, "@UserId", SqlDbType.BigInt, userId);
         await updateCmd.ExecuteNonQueryAsync(cancellationToken);
 
-        var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "." + userId;
+        var token = AuthTokenCodec.Issue(userId, storedHash, DateTimeOffset.UtcNow.AddDays(7));
 
         return new AuthUserDto(
             userId,
@@ -178,7 +179,7 @@ public sealed class AuthRepository(IDbConnectionFactory connectionFactory) : IAu
                 request.Email.Trim(),
                 request.Phone,
                 null,
-                Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "." + userId);
+                AuthTokenCodec.Issue(userId, passwordHash, DateTimeOffset.UtcNow.AddDays(7)));
         }
         catch
         {
@@ -187,8 +188,66 @@ public sealed class AuthRepository(IDbConnectionFactory connectionFactory) : IAu
         }
     }
 
+    public async Task<AuthTokenUserDto?> GetTokenUserAsync(long userId, CancellationToken cancellationToken)
+    {
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            SELECT u.UserId,
+                   u.RoleId,
+                   r.RoleCode,
+                   r.RoleName,
+                   u.Username,
+                   u.Email,
+                   u.PasswordHash,
+                   u.FullName,
+                   u.Phone,
+                   u.AvatarUrl,
+                   u.IsActive,
+                   s.StudentId,
+                   t.TeacherId
+            FROM   dbo.Users u
+            INNER JOIN dbo.Roles    r ON r.RoleId = u.RoleId
+            LEFT  JOIN dbo.Students s ON s.UserId = u.UserId
+            LEFT  JOIN dbo.Teachers t ON t.UserId = u.UserId
+            WHERE  u.UserId = @UserId;
+            """;
+        SqlRepositoryHelper.AddParameter(cmd, "@UserId", SqlDbType.BigInt, userId);
+
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+            return null;
+
+        return new AuthTokenUserDto(
+            reader.GetInt64(reader.GetOrdinal("UserId")),
+            reader.GetByte(reader.GetOrdinal("RoleId")),
+            reader.GetString(reader.GetOrdinal("RoleCode")),
+            reader.GetString(reader.GetOrdinal("RoleName")),
+            SqlRepositoryHelper.GetNullableLong(reader, "StudentId"),
+            SqlRepositoryHelper.GetNullableLong(reader, "TeacherId"),
+            reader.GetString(reader.GetOrdinal("Username")),
+            reader.GetString(reader.GetOrdinal("FullName")),
+            reader.GetString(reader.GetOrdinal("Email")),
+            SqlRepositoryHelper.GetNullableString(reader, "Phone"),
+            SqlRepositoryHelper.GetNullableString(reader, "AvatarUrl"),
+            reader.GetString(reader.GetOrdinal("PasswordHash")),
+            reader.GetBoolean(reader.GetOrdinal("IsActive")));
+    }
+
     private static bool VerifyPassword(string inputPassword, string storedHash)
     {
+        // Admin-created accounts use ASP.NET Identity password hashes.
+        if (storedHash.StartsWith("AQAAAA", StringComparison.Ordinal))
+        {
+            try
+            {
+                return new PasswordHasher<object>().VerifyHashedPassword(new object(), storedHash, inputPassword)
+                    != PasswordVerificationResult.Failed;
+            }
+            catch (FormatException) { return false; }
+        }
         // Khi cơ sở dữ liệu mẫu đang chứa placeholder "test-password-hash", chấp nhận đăng nhập
         if (string.Equals(storedHash, "test-password-hash", StringComparison.OrdinalIgnoreCase))
             return true;

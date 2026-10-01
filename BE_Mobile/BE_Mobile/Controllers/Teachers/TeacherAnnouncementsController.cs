@@ -1,10 +1,14 @@
 using BE_Mobile.Contracts.Teachers;
+using BE_Mobile.Security;
 using BE_Mobile.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BE_Mobile.Controllers.Teachers;
 
 [ApiController]
+[Authorize(AuthenticationSchemes = AppAuthenticationDefaults.Scheme, Roles = "TEACHER")]
+[TeacherRouteGuard]
 [Route("api/teachers/{teacherId:long}")]
 public sealed class TeacherAnnouncementsController(ITeacherAnnouncementService teacherAnnouncementService) : ControllerBase
 {

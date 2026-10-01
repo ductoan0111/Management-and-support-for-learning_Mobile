@@ -292,22 +292,43 @@ public sealed class TeacherAssignmentRepository(IDbConnectionFactory connectionF
         if (!await SqlRepositoryHelper.IsTeacherOfSectionAsync(connection, teacherId, sectionId, cancellationToken))
             return Forbid();
 
+        await using var assignmentCmd = connection.CreateCommand();
+        assignmentCmd.CommandText = """
+            SELECT MaxScore
+            FROM   dbo.Assignments
+            WHERE  AssignmentId = @AssignmentId
+              AND  SectionId = @SectionId;
+            """;
+        SqlRepositoryHelper.AddParameter(assignmentCmd, "@AssignmentId", SqlDbType.BigInt, assignmentId);
+        SqlRepositoryHelper.AddParameter(assignmentCmd, "@SectionId", SqlDbType.BigInt, sectionId);
+        var assignmentMaxScoreRaw = await assignmentCmd.ExecuteScalarAsync(cancellationToken);
+        if (assignmentMaxScoreRaw is null or DBNull)
+            return NotFound();
+
+        var assignmentMaxScore = Convert.ToDecimal(assignmentMaxScoreRaw);
+        if (request.Score > assignmentMaxScore)
+            return BadRequest(new { message = "Score cannot exceed the assignment max score." });
+
         var userId = await SqlRepositoryHelper.GetUserIdByTeacherAsync(connection, teacherId, cancellationToken);
         if (userId is null) return NotFound();
 
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = """
-            UPDATE dbo.AssignmentSubmissions
-            SET Score          = @Score,
-                Feedback       = @Feedback,
-                GradedByUserId = @GradedByUserId,
-                GradedAt       = SYSDATETIME(),
-                Status         = 2
-            WHERE SubmissionId  = @SubmissionId
-              AND AssignmentId  = @AssignmentId;
+            UPDATE sub
+            SET sub.Score          = @Score,
+                sub.Feedback       = @Feedback,
+                sub.GradedByUserId = @GradedByUserId,
+                sub.GradedAt       = SYSDATETIME(),
+                sub.Status         = 2
+            FROM dbo.AssignmentSubmissions sub
+            INNER JOIN dbo.Assignments a ON a.AssignmentId = sub.AssignmentId
+            WHERE sub.SubmissionId = @SubmissionId
+              AND sub.AssignmentId = @AssignmentId
+              AND a.SectionId      = @SectionId;
             """;
         SqlRepositoryHelper.AddParameter(cmd, "@SubmissionId", SqlDbType.BigInt, submissionId);
         SqlRepositoryHelper.AddParameter(cmd, "@AssignmentId", SqlDbType.BigInt, assignmentId);
+        SqlRepositoryHelper.AddParameter(cmd, "@SectionId", SqlDbType.BigInt, sectionId);
         SqlRepositoryHelper.AddParameter(cmd, "@Score", SqlDbType.Decimal, request.Score);
         SqlRepositoryHelper.AddParameter(cmd, "@Feedback", SqlDbType.NVarChar, SqlRepositoryHelper.NormalizeText(request.Feedback));
         SqlRepositoryHelper.AddParameter(cmd, "@GradedByUserId", SqlDbType.BigInt, userId.Value);
@@ -335,9 +356,13 @@ public sealed class TeacherAssignmentRepository(IDbConnectionFactory connectionF
             INNER JOIN dbo.Assignments a  ON a.AssignmentId = sub.AssignmentId
             INNER JOIN dbo.Students   st ON st.StudentId   = sub.StudentId
             INNER JOIN dbo.Users      u  ON u.UserId        = st.UserId
-            WHERE  sub.SubmissionId = @SubmissionId;
+            WHERE  sub.SubmissionId = @SubmissionId
+              AND  sub.AssignmentId = @AssignmentId
+              AND  a.SectionId = @SectionId;
             """;
         SqlRepositoryHelper.AddParameter(cmdGet, "@SubmissionId", SqlDbType.BigInt, submissionId);
+        SqlRepositoryHelper.AddParameter(cmdGet, "@AssignmentId", SqlDbType.BigInt, assignmentId);
+        SqlRepositoryHelper.AddParameter(cmdGet, "@SectionId", SqlDbType.BigInt, sectionId);
 
         await using var reader = await cmdGet.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken))
