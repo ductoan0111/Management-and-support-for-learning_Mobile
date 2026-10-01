@@ -11,12 +11,16 @@ namespace BE_Mobile.Repositories.Implementations;
 public sealed class TeacherStudentRepository(IDbConnectionFactory connectionFactory)
     : ControllerBase, ITeacherStudentRepository
 {
-    public async Task<IReadOnlyList<TeacherSectionStudentDto>> GetStudentsBySectionAsync(
+    public async Task<ActionResult<IReadOnlyList<TeacherSectionStudentDto>>> GetStudentsBySectionAsync(
+        long teacherId,
         long sectionId,
         CancellationToken cancellationToken)
     {
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
+
+        if (!await SqlRepositoryHelper.IsTeacherOfSectionAsync(connection, teacherId, sectionId, cancellationToken))
+            return Forbid();
 
         await using var command = connection.CreateCommand();
         command.CommandText = "dbo.sp_GetStudentsBySection";
@@ -39,7 +43,7 @@ public sealed class TeacherStudentRepository(IDbConnectionFactory connectionFact
                 SqlRepositoryHelper.GetNullableString(reader, "LetterGrade")));
         }
 
-        return students;
+        return Ok(students);
     }
 
     public async Task<ActionResult<TeacherSectionStudentDetailDto>> GetStudentInSection(

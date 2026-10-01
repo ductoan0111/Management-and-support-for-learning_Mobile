@@ -25,7 +25,8 @@ builder.Services.AddBackendServices();
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<AdminTokenService>();
 builder.Services.AddAuthentication(AdminTokenService.Scheme)
-    .AddScheme<AuthenticationSchemeOptions, AdminAuthenticationHandler>(AdminTokenService.Scheme, _ => { });
+    .AddScheme<AuthenticationSchemeOptions, AdminAuthenticationHandler>(AdminTokenService.Scheme, _ => { })
+    .AddScheme<AuthenticationSchemeOptions, AppAuthenticationHandler>(AppAuthenticationDefaults.Scheme, _ => { });
 builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(options =>
 {

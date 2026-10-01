@@ -5,6 +5,6 @@ namespace BE_Mobile.Repositories.Interfaces;
 
 public interface ITeacherStudentRepository
 {
-    Task<IReadOnlyList<TeacherSectionStudentDto>> GetStudentsBySectionAsync(long sectionId, CancellationToken cancellationToken);
+    Task<ActionResult<IReadOnlyList<TeacherSectionStudentDto>>> GetStudentsBySectionAsync(long teacherId, long sectionId, CancellationToken cancellationToken);
     Task<ActionResult<TeacherSectionStudentDetailDto>> GetStudentInSection(long teacherId, long sectionId, long studentId, CancellationToken cancellationToken);
 }
