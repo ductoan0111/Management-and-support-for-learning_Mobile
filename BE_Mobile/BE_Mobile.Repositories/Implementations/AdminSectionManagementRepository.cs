@@ -114,6 +114,49 @@ public sealed class AdminSectionManagementRepository(IDbConnectionFactory factor
             """, _ => { }, r => new AdminStatisticsDto(r.GetInt32(0), r.GetInt32(1), r.GetInt32(2), r.GetInt32(3),
                 r.GetInt32(4), r.GetInt32(5), r.GetInt32(6), r.GetInt32(7), r.GetInt32(8), r.GetInt32(9), r.GetInt32(10)), cancellationToken)).Single();
 
+    public async Task<AdminReportDto> ReportAsync(CancellationToken cancellationToken)
+    {
+        static AdminChartPointDto Point(SqlDataReader r) => new(r.GetString(0), r.GetInt32(1));
+        var byDepartment = await db.QueryAsync("""
+            SELECT d.DepartmentName, COUNT(s.StudentId)
+            FROM dbo.Departments d
+            LEFT JOIN dbo.Majors m ON m.DepartmentId = d.DepartmentId
+            LEFT JOIN dbo.Students s ON s.MajorId = m.MajorId AND s.Status = 1
+            GROUP BY d.DepartmentId, d.DepartmentName
+            ORDER BY COUNT(s.StudentId) DESC, d.DepartmentName;
+            """, _ => { }, Point, cancellationToken);
+        var byMajor = await db.QueryAsync("""
+            SELECT m.MajorName, COUNT(s.StudentId)
+            FROM dbo.Majors m
+            LEFT JOIN dbo.Students s ON s.MajorId = m.MajorId AND s.Status = 1
+            GROUP BY m.MajorId, m.MajorName
+            ORDER BY COUNT(s.StudentId) DESC, m.MajorName;
+            """, _ => { }, Point, cancellationToken);
+        var bySemester = await db.QueryAsync("""
+            SELECT sm.SemesterName + N' ' + sm.AcademicYear, COUNT(DISTINCT cs.SectionId), COUNT(e.EnrollmentId)
+            FROM dbo.Semesters sm
+            LEFT JOIN dbo.CourseSections cs ON cs.SemesterId = sm.SemesterId
+            LEFT JOIN dbo.Enrollments e ON e.SectionId = cs.SectionId AND e.Status <> 0
+            GROUP BY sm.SemesterId, sm.SemesterName, sm.AcademicYear, sm.StartDate
+            ORDER BY sm.StartDate;
+            """, _ => { }, r => new AdminSemesterReportDto(r.GetString(0), r.GetInt32(1), r.GetInt32(2)), cancellationToken);
+        var grades = await db.QueryAsync("""
+            SELECT b.Label, COUNT(e.EnrollmentId)
+            FROM (VALUES (1, N'0 – 3.9', 0.0, 4.0), (2, N'4 – 4.9', 4.0, 5.0), (3, N'5 – 6.4', 5.0, 6.5),
+                         (4, N'6.5 – 7.9', 6.5, 8.0), (5, N'8 – 8.9', 8.0, 9.0), (6, N'9 – 10', 9.0, 10.01)) b(Ord, Label, Lo, Hi)
+            LEFT JOIN dbo.Enrollments e ON e.Status <> 0 AND e.FinalScore10 >= b.Lo AND e.FinalScore10 < b.Hi
+            GROUP BY b.Ord, b.Label
+            ORDER BY b.Ord;
+            """, _ => { }, Point, cancellationToken);
+        var average = (await db.QueryAsync("""
+            SELECT ISNULL(AVG(CAST(FinalScore10 AS FLOAT)), 0) FROM dbo.Enrollments
+            WHERE Status <> 0 AND FinalScore10 IS NOT NULL;
+            """, _ => { }, r => r.GetDouble(0), cancellationToken)).Single();
+        var gradeList = grades.ToList();
+        return new AdminReportDto(byDepartment.ToList(), byMajor.ToList(), bySemester.ToList(), gradeList,
+            Math.Round(average, 2), gradeList.Sum(x => x.Value));
+    }
+
     private static void Pair(SqlParameterCollection p, long sectionId, string name, long id)
     {
         AdminSql.Add(p, "@SectionId", SqlDbType.BigInt, sectionId);

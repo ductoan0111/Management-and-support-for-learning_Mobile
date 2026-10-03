@@ -6,14 +6,16 @@ import {
   UserCog,
   Users,
 } from "lucide-react";
-import type { AdminStatistics } from "../../types/admin";
+import type { AdminReport, AdminStatistics } from "../../types/admin";
+import { Reports } from "./Reports";
 
 type DashboardProps = {
   isLoading: boolean;
   statistics: AdminStatistics | null;
+  report: AdminReport | null;
 };
 
-export function Dashboard({ isLoading, statistics }: DashboardProps) {
+export function Dashboard({ isLoading, statistics, report }: DashboardProps) {
   const cards = [
     {
       label: "Tài khoản",
@@ -54,17 +56,20 @@ export function Dashboard({ isLoading, statistics }: DashboardProps) {
   ];
 
   return (
-    <section className="dashboard-grid">
-      {cards.map(({ icon: Icon, label, meta, value }) => (
-        <article className="metric-card" key={label}>
-          <div className="metric-icon">
-            <Icon size={20} aria-hidden="true" />
-          </div>
-          <span>{label}</span>
-          <strong>{isLoading ? "..." : value ?? 0}</strong>
-          <small>{meta}</small>
-        </article>
-      ))}
-    </section>
+    <>
+      <section className="dashboard-grid">
+        {cards.map(({ icon: Icon, label, meta, value }, index) => (
+          <article className={`metric-card tone-${index % 6}`} key={label}>
+            <div className="metric-icon">
+              <Icon size={20} aria-hidden="true" />
+            </div>
+            <span>{label}</span>
+            <strong>{isLoading ? "..." : value ?? 0}</strong>
+            <small>{meta}</small>
+          </article>
+        ))}
+      </section>
+      <Reports isLoading={isLoading} report={report} />
+    </>
   );
 }

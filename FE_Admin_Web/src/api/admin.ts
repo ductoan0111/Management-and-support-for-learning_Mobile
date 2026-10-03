@@ -4,6 +4,7 @@ import type {
   AdminRecord,
   AdminRole,
   AdminSession,
+  AdminReport,
   AdminStatistics,
   PagedResult,
 } from "../types/admin";
@@ -191,4 +192,8 @@ export async function getAdminStatistics(
   token: string,
 ): Promise<AdminStatistics> {
   return request<AdminStatistics>("/api/admin/statistics", token);
+}
+
+export async function getAdminReport(token: string): Promise<AdminReport> {
+  return request<AdminReport>("/api/admin/statistics/reports", token);
 }

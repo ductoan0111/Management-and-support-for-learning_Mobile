@@ -22,3 +22,8 @@ public sealed record AdminEnrollmentDto(long EnrollmentId, long SectionId, long 
 public sealed record AdminStatisticsDto(int TotalUsers, int ActiveUsers, int TotalStudents, int ActiveStudents,
     int TotalTeachers, int ActiveTeachers, int TotalCourses, int TotalSections, int OpenSections,
     int TotalSemesters, int ActiveEnrollments);
+public sealed record AdminChartPointDto(string Label, int Value);
+public sealed record AdminSemesterReportDto(string Label, int Sections, int Enrollments);
+public sealed record AdminReportDto(IReadOnlyList<AdminChartPointDto> StudentsByDepartment,
+    IReadOnlyList<AdminChartPointDto> StudentsByMajor, IReadOnlyList<AdminSemesterReportDto> SectionsBySemester,
+    IReadOnlyList<AdminChartPointDto> GradeDistribution, double AverageScore, int GradedEnrollments);

@@ -39,4 +39,7 @@ public sealed class AdminStatisticsController(IAdminSectionManagementService ser
     [HttpGet]
     public async Task<ActionResult<AdminStatisticsDto>> Get(CancellationToken cancellationToken) =>
         this.ToActionResult(await service.StatisticsAsync(cancellationToken));
+    [HttpGet("reports")]
+    public async Task<ActionResult<AdminReportDto>> Reports(CancellationToken cancellationToken) =>
+        this.ToActionResult(await service.ReportAsync(cancellationToken));
 }

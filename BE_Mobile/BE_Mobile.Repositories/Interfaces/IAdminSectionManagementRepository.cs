@@ -12,4 +12,5 @@ public interface IAdminSectionManagementRepository
     Task<AdminEnrollmentDto?> EnrollAsync(long sectionId, long studentId, byte status, CancellationToken cancellationToken);
     Task<bool> CancelEnrollmentAsync(long sectionId, long studentId, CancellationToken cancellationToken);
     Task<AdminStatisticsDto> StatisticsAsync(CancellationToken cancellationToken);
+    Task<AdminReportDto> ReportAsync(CancellationToken cancellationToken);
 }

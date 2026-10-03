@@ -52,6 +52,16 @@ export type AdminStatistics = {
   activeEnrollments: number;
 };
 
+export type ChartPoint = { label: string; value: number };
+export type AdminReport = {
+  studentsByDepartment: ChartPoint[];
+  studentsByMajor: ChartPoint[];
+  sectionsBySemester: { label: string; sections: number; enrollments: number }[];
+  gradeDistribution: ChartPoint[];
+  averageScore: number;
+  gradedEnrollments: number;
+};
+
 export type AdminQuery = {
   search?: string;
   page?: number;

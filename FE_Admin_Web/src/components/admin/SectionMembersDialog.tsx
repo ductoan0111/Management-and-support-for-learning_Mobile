@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Pencil, Trash2, Save, RefreshCw } from "lucide-react";
+import { Pencil, Trash2, Save, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { AdminApiError, deleteAdminResource, listAdminResource, updateAdminResource } from "../../api/admin";
 import type { AdminRecord, PagedResult } from "../../types/admin";
 import { ActionModal } from "./ActionModal";
@@ -89,8 +89,8 @@ export function SectionMembersDialog({ row, kind, token, onClose, onChanged, onU
       </tr>)}{!loading && result?.items.length === 0 && <tr><td colSpan={4}>Chưa có dữ liệu.</td></tr>}</tbody></table></div>
     <footer className="pagination"><span>{result?.totalCount ?? 0} bản ghi · Trang {page}/{Math.max(1, result?.totalPages ?? 1)}</span><div>
       <button className="icon-button" type="button" title="Tải lại" disabled={busy || loading} onClick={() => setRevision(value => value + 1)}><RefreshCw size={16} /></button>
-      <button className="secondary-button" disabled={busy || loading || page <= 1} onClick={() => setPage(page - 1)}>Trước</button>
-      <button className="secondary-button" disabled={busy || loading || page >= (result?.totalPages ?? 1)} onClick={() => setPage(page + 1)}>Sau</button>
+      <button className="icon-button" type="button" title="Trang trước" aria-label="Trang trước" disabled={busy || loading || page <= 1} onClick={() => setPage(page - 1)}><ChevronLeft size={18} /></button>
+      <button className="icon-button" type="button" title="Trang sau" aria-label="Trang sau" disabled={busy || loading || page >= (result?.totalPages ?? 1)} onClick={() => setPage(page + 1)}><ChevronRight size={18} /></button>
     </div></footer>
   </ActionModal>;
 }
