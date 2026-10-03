@@ -5,6 +5,7 @@ import {
   createAdminResource,
   deleteAdminResource,
   getAdminRoles,
+  getAdminReport,
   getAdminStatistics,
   listAdminResource,
   updateAdminResource,
@@ -24,6 +25,7 @@ import type {
   AdminRecord,
   AdminRole,
   AdminSession,
+  AdminReport,
   AdminStatistics,
   DialogState,
   LookupState,
@@ -53,6 +55,7 @@ export default function App() {
   const [activeKey, setActiveKey] = useState("dashboard");
   const [lookups, setLookups] = useState<LookupState>(emptyLookups);
   const [statistics, setStatistics] = useState<AdminStatistics | null>(null);
+  const [report, setReport] = useState<AdminReport | null>(null);
   const [rows, setRows] = useState<AdminRecord[]>([]);
   const [pageInfo, setPageInfo] = useState<PagedResult<AdminRecord>>(initialPageInfo);
   const [search, setSearch] = useState("");
@@ -79,6 +82,7 @@ export default function App() {
     setActiveKey("dashboard");
     setRows([]);
     setStatistics(null);
+    setReport(null);
     setNotice(null);
   };
 
@@ -130,7 +134,12 @@ export default function App() {
   const loadStatistics = async (token: string) => {
     setIsDashboardLoading(true);
     try {
-      setStatistics(await getAdminStatistics(token));
+      const [stats, reportData] = await Promise.all([
+        getAdminStatistics(token),
+        getAdminReport(token).catch(() => null),
+      ]);
+      setStatistics(stats);
+      setReport(reportData);
     } catch (error) {
       handleError(error);
     } finally {
@@ -302,7 +311,11 @@ export default function App() {
         <NoticeBanner notice={notice} />
 
         {!activeResource ? (
-          <Dashboard isLoading={isDashboardLoading} statistics={statistics} />
+          <Dashboard
+            isLoading={isDashboardLoading}
+            statistics={statistics}
+            report={report}
+          />
         ) : (
           <ResourceTable
             filters={filters}
