@@ -12,4 +12,5 @@ public interface IAdminSectionManagementService
     Task<OperationResult<AdminEnrollmentDto>> EnrollAsync(long sectionId, long studentId, SaveAdminEnrollmentRequest request, CancellationToken cancellationToken);
     Task<OperationResult> CancelEnrollmentAsync(long sectionId, long studentId, CancellationToken cancellationToken);
     Task<OperationResult<AdminStatisticsDto>> StatisticsAsync(CancellationToken cancellationToken);
+    Task<OperationResult<AdminReportDto>> ReportAsync(CancellationToken cancellationToken);
 }

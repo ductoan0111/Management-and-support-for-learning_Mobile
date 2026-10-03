@@ -21,4 +21,6 @@ public sealed class AdminSectionManagementService(IAdminSectionManagementReposit
         AdminOperation.DeleteAsync(() => repository.CancelEnrollmentAsync(sectionId, studentId, cancellationToken));
     public Task<OperationResult<AdminStatisticsDto>> StatisticsAsync(CancellationToken cancellationToken) =>
         AdminOperation.RunAsync<AdminStatisticsDto>(async () => await repository.StatisticsAsync(cancellationToken));
+    public Task<OperationResult<AdminReportDto>> ReportAsync(CancellationToken cancellationToken) =>
+        AdminOperation.RunAsync<AdminReportDto>(async () => await repository.ReportAsync(cancellationToken));
 }
