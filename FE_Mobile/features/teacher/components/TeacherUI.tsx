@@ -3,27 +3,33 @@ import { router } from "expo-router";
 import { useState, type ComponentProps, type ReactNode } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors } from "@/constants/theme";
+import { colors, shadows } from "@/constants/theme";
 
 export const ui = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 20, paddingBottom: 40, width: "100%", maxWidth: 900, alignSelf: "center", gap: 14 },
-  row: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
+  content: { padding: 20, paddingBottom: 48, width: "100%", maxWidth: 900, alignSelf: "center", gap: 16 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" },
   grow: { flex: 1, minWidth: 0 },
-  title: { color: colors.ink, fontSize: 23, fontWeight: "800" },
+  title: { color: colors.ink, fontSize: 24, fontWeight: "800", letterSpacing: -0.3 },
   heading: { color: colors.ink, fontSize: 17, fontWeight: "700" },
   text: { color: colors.ink, fontSize: 15, lineHeight: 23 },
-  muted: { color: colors.muted, fontSize: 13, lineHeight: 21 },
-  code: { color: colors.primary, fontSize: 13, fontWeight: "800" },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 16, gap: 8 },
-  input: { backgroundColor: colors.surface, borderColor: colors.softBorder, borderWidth: 1, borderRadius: 8, minHeight: 48, padding: 12, color: colors.ink, fontSize: 15 },
-  button: { minHeight: 44, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  muted: { color: colors.muted, fontSize: 13, lineHeight: 20 },
+  code: { color: colors.primary, fontSize: 12, fontWeight: "800", letterSpacing: 0.8 },
+  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, gap: 8, ...shadows.card },
+  input: { backgroundColor: colors.surfaceMuted, borderColor: colors.softBorder, borderWidth: 1, borderRadius: 12, minHeight: 48, padding: 12, color: colors.ink, fontSize: 15 },
+  button: { minHeight: 46, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12, backgroundColor: colors.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   buttonText: { color: "white", fontWeight: "700", fontSize: 14, flexShrink: 1 },
-  icon: { height: 44, width: 44, alignItems: "center", justifyContent: "center", borderRadius: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  error: { color: "#A32020", backgroundColor: "#FFF0F0", padding: 12, borderRadius: 8, lineHeight: 22 },
-  success: { color: colors.success, backgroundColor: "#EAF7F0", padding: 12, borderRadius: 8 },
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 20 },
-  modal: { maxHeight: "90%", width: "100%", maxWidth: 640, alignSelf: "center", backgroundColor: colors.surface, padding: 20, borderRadius: 8, gap: 14 },
+  icon: { height: 44, width: 44, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: "#E6F2F3" },
+  error: { color: "#A32020", backgroundColor: "#FFF0F0", padding: 14, borderRadius: 12, lineHeight: 22, borderLeftWidth: 4, borderLeftColor: "#DC2626" },
+  success: { color: colors.success, backgroundColor: "#EAF7F0", padding: 14, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.success },
+  overlay: { flex: 1, backgroundColor: "rgba(15,23,42,0.5)", justifyContent: "center", padding: 20 },
+  modal: { maxHeight: "90%", width: "100%", maxWidth: 640, alignSelf: "center", backgroundColor: colors.surface, padding: 20, borderRadius: 20, gap: 14, ...shadows.card },
+  hero: { backgroundColor: colors.primary, borderRadius: 24, padding: 20, gap: 16, ...shadows.card },
+  heroText: { color: "white", fontSize: 18, fontWeight: "800" },
+  heroMuted: { color: "rgba(255,255,255,0.8)", fontSize: 13 },
+  chip: { alignSelf: "flex-start", backgroundColor: "#E6F2F3", color: colors.primary, fontSize: 12, fontWeight: "700", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: "hidden" },
+  tile: { width: "48%", flexGrow: 1, gap: 10, minHeight: 120 },
+  tileIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#E6F2F3" },
 });
 export type IconName = ComponentProps<typeof Ionicons>["name"];
 export function IconButton({ icon, label, onPress, disabled }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean }) {
