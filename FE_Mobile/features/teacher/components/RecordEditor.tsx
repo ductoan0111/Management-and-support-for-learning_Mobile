@@ -1,8 +1,11 @@
 import type { Row } from "@/api/teacher";
+import { colors } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useState } from "react";
-import { Switch, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, Switch, Text, TextInput, View } from "react-native";
 import type { Field } from "../config/resourceForms";
-import { Button, Dialog, Select, ui } from "./TeacherUI";
+import { Button, Dialog, IconButton, Select, ui } from "./TeacherUI";
 
 function dateInput(value: Row[string]) {
   if (!value) return "";
@@ -10,6 +13,60 @@ function dateInput(value: Row[string]) {
   if (Number.isNaN(date.getTime())) return String(value);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
+
+const pad = (n: number) => String(n).padStart(2, "0");
+const formatDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const formatDateTime = (d: Date) => `${formatDate(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+function DateField({ field, value, disabled, onChange }: { field: Field; value: string; disabled: boolean; onChange: (value: string) => void }) {
+  const withTime = field.type === "datetime";
+  const [mode, setMode] = useState<"date" | "time" | null>(null);
+  const parsed = new Date(value.replace(" ", "T"));
+  const current = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+
+  if (Platform.OS === "web") return <TextInput
+    accessibilityLabel={field.label}
+    editable={!disabled}
+    style={ui.input}
+    placeholder={withTime ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD"}
+    value={value}
+    onChangeText={onChange}
+  />;
+
+  function picked(event: DateTimePickerEvent, date?: Date) {
+    const step = mode;
+    setMode(null);
+    if (event.type !== "set" || !date) return;
+    const next = new Date(current);
+    if (step === "date") {
+      next.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+      if (withTime) {
+        onChange(formatDateTime(next));
+        // Android hiển thị date và time ở hai bước riêng.
+        if (Platform.OS === "android") setTimeout(() => setMode("time"), 0);
+        return;
+      }
+      onChange(formatDate(next));
+    } else {
+      next.setHours(date.getHours(), date.getMinutes());
+      onChange(formatDateTime(next));
+    }
+  }
+
+  return <View style={{ gap: 8 }}>
+    <View style={ui.row}>
+      <Pressable accessibilityRole="button" accessibilityLabel={field.label} disabled={disabled} onPress={() => setMode("date")} style={[ui.input, ui.row, ui.grow, { flexWrap: "nowrap" }]}>
+        <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+        <Text style={[ui.text, ui.grow, !value && { color: colors.muted }]}>{value || "Chọn ngày giờ"}</Text>
+      </Pressable>
+      {withTime && !!value && <IconButton icon="time-outline" label="Chọn giờ" disabled={disabled} onPress={() => setMode("time")} />}
+      {!!value && !field.required && <IconButton icon="close" label="Xóa" disabled={disabled} onPress={() => onChange("")} />}
+    </View>
+    {mode && <DateTimePicker value={current} mode={mode} is24Hour display={Platform.OS === "ios" ? "inline" : "default"} onChange={picked} />}
+    {Platform.OS === "ios" && !!mode && <Button label="Xong" icon="checkmark" onPress={() => setMode(null)} />}
+  </View>;
+}
+
 
 export function RecordEditor({
   title,
@@ -28,7 +85,7 @@ export function RecordEditor({
 }) {
   const [form, setForm] = useState<Row>(() => Object.fromEntries(fields.map(field => [
     field.key,
-    field.type === "datetime" ? dateInput(initial[field.key]) : initial[field.key] ?? "",
+    field.type === "datetime" ? dateInput(initial[field.key]) : field.type === "date" ? String(initial[field.key] ?? "").slice(0, 10) : initial[field.key] ?? "",
   ])));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -89,7 +146,10 @@ export function RecordEditor({
         options={field.options ?? []}
         value={String(form[field.key])}
         onChange={value => setForm({ ...form, [field.key]: value })}
-      /> : <>
+      /> : field.type === "date" || field.type === "datetime" ? <>
+        <Text style={ui.muted}>{field.label.replace(/\s*\(.*\)$/, "")}{field.required ? " *" : ""}</Text>
+        <DateField field={field} value={String(form[field.key] ?? "").slice(0, field.type === "date" ? 10 : 16)} disabled={busy} onChange={value => setForm({ ...form, [field.key]: value })} />
+      </> : <>
         <Text style={ui.muted}>{field.label}{field.required ? " *" : ""}</Text>
         <TextInput
           accessibilityLabel={field.label}

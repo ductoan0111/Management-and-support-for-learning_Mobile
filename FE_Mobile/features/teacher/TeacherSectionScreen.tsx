@@ -1,8 +1,10 @@
 import { getSections, teacherRequest, type Row } from "@/api/teacher";
+import { colors } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { Linking, ScrollView, Text, TextInput, View } from "react-native";
-import { Button, Dialog, IconButton, Page, Select, dateText, display, ui } from "./components/TeacherUI";
+import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Button, Dialog, IconButton, Page, Select, dateText, display, ui, type IconName } from "./components/TeacherUI";
 import { RecordEditor } from "./components/RecordEditor";
 import { TeacherGrades } from "./components/TeacherGrades";
 import { TeacherSubmissions } from "./components/TeacherSubmissions";
@@ -11,12 +13,12 @@ import { useTeacherData } from "./useTeacherData";
 
 type Tab = "students" | ResourceKind | "grades";
 
-const tabs: { value: Tab; label: string }[] = [
-  { value: "students", label: "Sinh viên" },
-  { value: "materials", label: "Tài liệu" },
-  { value: "assignments", label: "Bài tập" },
-  { value: "grades", label: "Bảng điểm" },
-  { value: "announcements", label: "Thông báo" },
+const tabs: { value: Tab; label: string; icon: IconName }[] = [
+  { value: "students", label: "Sinh viên", icon: "people-outline" },
+  { value: "materials", label: "Tài liệu", icon: "document-text-outline" },
+  { value: "assignments", label: "Bài tập", icon: "create-outline" },
+  { value: "grades", label: "Bảng điểm", icon: "stats-chart-outline" },
+  { value: "announcements", label: "Thông báo", icon: "notifications-outline" },
 ];
 
 export default function TeacherSectionScreen({ initialTab = "students" }: { initialTab?: Tab }) {
@@ -36,7 +38,18 @@ export default function TeacherSectionScreen({ initialTab = "students" }: { init
     />
     {section ? <>
       <Text style={ui.muted}>{section.semesterName} · {section.enrolledCount} sinh viên</Text>
-      <Select label="Nội dung" value={tab} onChange={value => setTab(value as Tab)} options={tabs} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {tabs.map(item => <Pressable
+          key={item.value}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: tab === item.value }}
+          onPress={() => setTab(item.value)}
+          style={[ui.row, { flexWrap: "nowrap", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: tab === item.value ? colors.primary : colors.surface, borderWidth: 1, borderColor: tab === item.value ? colors.primary : colors.border }]}
+        >
+          <Ionicons name={item.icon} size={16} color={tab === item.value ? "white" : colors.primary} />
+          <Text style={{ color: tab === item.value ? "white" : colors.ink, fontWeight: "700", fontSize: 13 }}>{item.label}</Text>
+        </Pressable>)}
+      </ScrollView>
       {tab === "grades"
         ? <TeacherGrades key={sectionId} sectionId={sectionId} />
         : <SectionRecords key={`${sectionId}-${tab}`} sectionId={sectionId} tab={tab} />}
