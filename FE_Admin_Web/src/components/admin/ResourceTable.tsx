@@ -1,4 +1,4 @@
-import { KeyRound, Shield, Users, GraduationCap, Loader2, Pencil, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, KeyRound, Shield, Users, GraduationCap, Loader2, Pencil, Search, Trash2 } from "lucide-react";
 import type {
   AdminRecord,
   LookupState,
@@ -155,20 +155,24 @@ export function ResourceTable({
         </span>
         <div>
           <button
-            className="secondary-button"
+            className="icon-button"
             disabled={pageInfo.page <= 1 || isLoading}
             onClick={() => onPageChange(Math.max(1, pageInfo.page - 1))}
+            title="Trang trước"
+            aria-label="Trang trước"
             type="button"
           >
-            Trước
+            <ChevronLeft size={18} aria-hidden="true" />
           </button>
           <button
-            className="secondary-button"
+            className="icon-button"
             disabled={pageInfo.page >= pageInfo.totalPages || isLoading}
             onClick={() => onPageChange(pageInfo.page + 1)}
+            title="Trang sau"
+            aria-label="Trang sau"
             type="button"
           >
-            Sau
+            <ChevronRight size={18} aria-hidden="true" />
           </button>
         </div>
       </footer>
