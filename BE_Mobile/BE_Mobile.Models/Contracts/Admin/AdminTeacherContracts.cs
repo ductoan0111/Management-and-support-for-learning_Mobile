@@ -1,7 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 namespace BE_Mobile.Contracts.Admin;
 
-public sealed record AdminTeacherDto(long TeacherId, long UserId, string TeacherCode, int DepartmentId, string? AcademicTitle, string? Specialization, byte Status);
+public sealed record AdminTeacherDto(long TeacherId, long UserId, string TeacherCode, string FullName,
+    int DepartmentId, string? AcademicTitle, string? Specialization, byte Status);
 
 public sealed class SaveAdminTeacherRequest
 {
