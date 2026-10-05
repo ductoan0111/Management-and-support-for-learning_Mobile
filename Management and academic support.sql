@@ -1,4 +1,5 @@
 ﻿
+-- Nếu chạy bằng sqlcmd, dùng -f i:65001 để đọc đúng tệp UTF-8 và giữ nguyên tiếng Việt.
 USE master;
 GO
 
@@ -1468,17 +1469,51 @@ BEGIN
       AND StudentId = @Student1Id;
 END;
 
-IF NOT EXISTS (SELECT 1 FROM dbo.Materials WHERE SectionId = @SectionWebId AND Title = N'Slide HTML CSS')
-BEGIN
-    INSERT INTO dbo.Materials(SectionId, UploadedByUserId, Title, Description, MaterialType, FileUrl, ExternalUrl, IsVisible)
-    VALUES (@SectionWebId, @Gv1UserId, N'Slide HTML CSS', N'Tài liệu bài giảng tuần 1 và tuần 2.', 'PDF', N'https://example.com/materials/html-css.pdf', NULL, 1);
-END;
+-- Tài liệu mở từ nguồn chính thức. Lưu URL trong ExternalUrl vì đây là trang web, không phải tệp tải lên.
+DECLARE @FreeMaterials TABLE
+(
+    SectionId BIGINT NOT NULL,
+    UploadedByUserId BIGINT NOT NULL,
+    Title NVARCHAR(250) NOT NULL,
+    Description NVARCHAR(500) NOT NULL,
+    ExternalUrl NVARCHAR(1000) NOT NULL
+);
 
-IF NOT EXISTS (SELECT 1 FROM dbo.Materials WHERE SectionId = @SectionDbId AND Title = N'Tài liệu SQL cơ bản')
-BEGIN
-    INSERT INTO dbo.Materials(SectionId, UploadedByUserId, Title, Description, MaterialType, FileUrl, ExternalUrl, IsVisible)
-    VALUES (@SectionDbId, @Gv2UserId, N'Tài liệu SQL cơ bản', N'Tổng hợp cú pháp SELECT, JOIN, GROUP BY.', 'LINK', NULL, N'https://example.com/materials/sql-basic', 1);
-END;
+INSERT INTO @FreeMaterials(SectionId, UploadedByUserId, Title, Description, ExternalUrl)
+VALUES
+    (@SectionWebId, @Gv1UserId, N'MDN - HTML cơ bản', N'Hướng dẫn cấu trúc nội dung trang web bằng HTML.', N'https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content'),
+    (@SectionWebId, @Gv1UserId, N'MDN - CSS cơ bản', N'Hướng dẫn tạo kiểu giao diện bằng CSS.', N'https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Getting_started'),
+    (@SectionWebId, @Gv1UserId, N'MDN - JavaScript cơ bản', N'Hướng dẫn lập trình tương tác trên trang web.', N'https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting'),
+    (@SectionDbId, @Gv2UserId, N'Microsoft Learn - SQL cơ bản', N'Hướng dẫn viết câu lệnh Transact-SQL.', N'https://learn.microsoft.com/en-us/sql/t-sql/tutorial-writing-transact-sql-statements'),
+    (@SectionDbId, @Gv2UserId, N'Microsoft Learn - Truy vấn dữ liệu', N'Lộ trình học SELECT, lọc, nối và tổng hợp dữ liệu bằng T-SQL.', N'https://learn.microsoft.com/en-us/training/paths/get-started-querying-with-transact-sql/'),
+    (@SectionMobileId, @Gv1UserId, N'Expo - Hướng dẫn làm ứng dụng', N'Thực hành tạo ứng dụng di động với Expo và React Native.', N'https://docs.expo.dev/tutorial/introduction/'),
+    (@SectionMobileId, @Gv1UserId, N'React Native - Bắt đầu', N'Tài liệu nhập môn các thành phần và khái niệm React Native.', N'https://reactnative.dev/docs/getting-started.html');
+
+-- Chỉ thay các URL mẫu cũ, giữ nguyên tài liệu do giảng viên tự thêm hoặc sửa.
+UPDATE dbo.Materials
+SET Title = N'MDN - HTML cơ bản',
+    Description = N'Hướng dẫn cấu trúc nội dung trang web bằng HTML.',
+    MaterialType = 'LINK', FileUrl = NULL,
+    ExternalUrl = N'https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content',
+    UpdatedAt = SYSDATETIME()
+WHERE SectionId = @SectionWebId AND FileUrl = N'https://example.com/materials/html-css.pdf';
+
+UPDATE dbo.Materials
+SET Title = N'Microsoft Learn - SQL cơ bản',
+    Description = N'Hướng dẫn viết câu lệnh Transact-SQL.',
+    MaterialType = 'LINK', FileUrl = NULL,
+    ExternalUrl = N'https://learn.microsoft.com/en-us/sql/t-sql/tutorial-writing-transact-sql-statements',
+    UpdatedAt = SYSDATETIME()
+WHERE SectionId = @SectionDbId AND ExternalUrl = N'https://example.com/materials/sql-basic';
+
+INSERT INTO dbo.Materials(SectionId, UploadedByUserId, Title, Description, MaterialType, FileUrl, ExternalUrl, IsVisible)
+SELECT fm.SectionId, fm.UploadedByUserId, fm.Title, fm.Description, 'LINK', NULL, fm.ExternalUrl, 1
+FROM @FreeMaterials AS fm
+WHERE NOT EXISTS
+(
+    SELECT 1 FROM dbo.Materials AS m
+    WHERE m.SectionId = fm.SectionId AND (m.ExternalUrl = fm.ExternalUrl OR m.Title = fm.Title)
+);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.GradeComponents WHERE SectionId = @SectionWebId AND ComponentName = N'Chuyên cần')
 BEGIN
