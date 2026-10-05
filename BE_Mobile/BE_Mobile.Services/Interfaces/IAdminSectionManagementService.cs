@@ -11,6 +11,9 @@ public interface IAdminSectionManagementService
     Task<OperationResult<IReadOnlyList<AdminClassScheduleDto>>> SchedulesAsync(long sectionId, CancellationToken cancellationToken);
     Task<OperationResult<AdminClassScheduleDto>> SaveScheduleAsync(long sectionId, long? scheduleId, SaveAdminClassScheduleRequest request, CancellationToken cancellationToken);
     Task<OperationResult> DeleteScheduleAsync(long sectionId, long scheduleId, CancellationToken cancellationToken);
+    Task<OperationResult<IReadOnlyList<AdminExamDto>>> ExamsAsync(long sectionId, CancellationToken cancellationToken);
+    Task<OperationResult<AdminExamDto>> SaveExamAsync(long sectionId, long? examId, long createdByUserId, SaveAdminExamRequest request, CancellationToken cancellationToken);
+    Task<OperationResult> DeleteExamAsync(long sectionId, long examId, CancellationToken cancellationToken);
     Task<OperationResult<PagedResult<AdminEnrollmentDto>>> StudentsAsync(long sectionId, AdminPageQuery query, CancellationToken cancellationToken);
     Task<OperationResult<AdminEnrollmentDto>> EnrollAsync(long sectionId, long studentId, SaveAdminEnrollmentRequest request, CancellationToken cancellationToken);
     Task<OperationResult> CancelEnrollmentAsync(long sectionId, long studentId, CancellationToken cancellationToken);

@@ -8,6 +8,8 @@ import type {
   AdminStatistics,
   AdminClassSchedule,
   SaveAdminClassSchedule,
+  AdminExam,
+  SaveAdminExam,
   PagedResult,
 } from "../types/admin";
 
@@ -209,6 +211,29 @@ export function saveSectionSchedule(
 
 export function deleteSectionSchedule(sectionId: number, scheduleId: number, token: string) {
   return request<void>(`/api/admin/course-sections/${sectionId}/schedules/${scheduleId}`, token, {
+    method: "DELETE",
+  });
+}
+
+export function listSectionExams(sectionId: number, token: string) {
+  return request<AdminExam[]>(`/api/admin/course-sections/${sectionId}/exams`, token);
+}
+
+export function saveSectionExam(
+  sectionId: number,
+  examId: number | null,
+  token: string,
+  data: SaveAdminExam,
+) {
+  const path = `/api/admin/course-sections/${sectionId}/exams${examId === null ? "" : `/${examId}`}`;
+  return request<AdminExam>(path, token, {
+    method: examId === null ? "POST" : "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteSectionExam(sectionId: number, examId: number, token: string) {
+  return request<void>(`/api/admin/course-sections/${sectionId}/exams/${examId}`, token, {
     method: "DELETE",
   });
 }

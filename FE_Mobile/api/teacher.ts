@@ -4,6 +4,7 @@ import { request } from "./client";
 export type Row = Record<string, string | number | boolean | null>;
 export type Section = Row & { sectionId: number; sectionCode: string; courseName: string; semesterName: string; academicYear: string; enrolledCount: number; status: number };
 export type Schedule = Row & { scheduleId: number; sectionId: number; courseName: string; dayOfWeek: number; startTime: string; endTime: string; effectiveFrom: string; effectiveTo: string };
+export type ExamSchedule = Row & { examId: number; sectionId: number; sectionCode: string; courseCode: string; courseName: string; examName: string; examType: number; examDate: string; startTime: string; durationMinutes: number; room: string | null; note: string | null; createdAt: string };
 
 export function teacherRequest<T>(path: string, method = "GET", body?: unknown) {
   const user = authSession.getUser();
@@ -12,3 +13,4 @@ export function teacherRequest<T>(path: string, method = "GET", body?: unknown) 
 }
 export const getSections = () => teacherRequest<Section[]>("/sections");
 export const getSchedule = () => teacherRequest<Schedule[]>("/schedule");
+export const getExams = () => teacherRequest<ExamSchedule[]>("/exams");

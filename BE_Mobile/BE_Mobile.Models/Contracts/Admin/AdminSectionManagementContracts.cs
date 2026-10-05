@@ -34,11 +34,24 @@ public sealed class SaveAdminClassScheduleRequest : IValidatableObject
             yield return new ValidationResult("Ngày kết thúc phải từ ngày bắt đầu trở đi.", [nameof(EffectiveTo)]);
     }
 }
+public sealed class SaveAdminExamRequest
+{
+    [Required, StringLength(200)] public string ExamName { get; set; } = "";
+    [Range(1, 4)] public byte ExamType { get; set; } = 1;
+    public DateOnly ExamDate { get; set; }
+    public TimeOnly StartTime { get; set; }
+    [Range(1, short.MaxValue)] public short DurationMinutes { get; set; } = 90;
+    [StringLength(50)] public string? Room { get; set; }
+    [StringLength(500)] public string? Note { get; set; }
+}
 public sealed record AdminSectionTeacherDto(long SectionId, long TeacherId, string TeacherCode,
     string FullName, bool IsPrimary, DateTime AssignedAt);
 public sealed record AdminClassScheduleDto(long ScheduleId, long SectionId, byte DayOfWeek,
     string StartTime, string EndTime, string? Room, string? Building,
     DateOnly EffectiveFrom, DateOnly EffectiveTo, string? Note);
+public sealed record AdminExamDto(long ExamId, long SectionId, long CreatedByUserId,
+    string ExamName, byte ExamType, DateOnly ExamDate, string StartTime,
+    short DurationMinutes, string? Room, string? Note, DateTime CreatedAt);
 public sealed record AdminEnrollmentDto(long EnrollmentId, long SectionId, long StudentId,
     string StudentCode, string FullName, byte Status, DateTime EnrolledAt);
 public sealed record AdminStatisticsDto(int TotalUsers, int ActiveUsers, int TotalStudents, int ActiveStudents,

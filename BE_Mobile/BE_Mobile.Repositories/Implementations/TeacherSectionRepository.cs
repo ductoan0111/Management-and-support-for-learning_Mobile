@@ -300,6 +300,60 @@ public sealed class TeacherSectionRepository(IDbConnectionFactory connectionFact
         return Ok(list);
     }
 
+    public async Task<ActionResult<IReadOnlyList<TeacherExamScheduleDto>>> GetExams(
+        long teacherId,
+        DateOnly? from,
+        DateOnly? to,
+        long? sectionId,
+        byte? examType,
+        CancellationToken cancellationToken)
+    {
+        if (examType is not null && examType.Value is < 1 or > 4)
+            return BadRequest(new { message = "ExamType must be 1, 2, 3, or 4." });
+
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            SELECT ex.ExamId,
+                   cs.SectionId,
+                   cs.SectionCode,
+                   c.CourseCode,
+                   c.CourseName,
+                   ex.ExamName,
+                   ex.ExamType,
+                   ex.ExamDate,
+                   CONVERT(VARCHAR(8), ex.StartTime, 108) AS StartTime,
+                   ex.DurationMinutes,
+                   ex.Room,
+                   ex.Note,
+                   ex.CreatedAt
+            FROM   dbo.Exams ex
+            INNER JOIN dbo.CourseSections  cs  ON cs.SectionId  = ex.SectionId
+            INNER JOIN dbo.SectionTeachers st  ON st.SectionId  = cs.SectionId
+            INNER JOIN dbo.Courses         c   ON c.CourseId    = cs.CourseId
+            WHERE  st.TeacherId = @TeacherId
+              AND (@SectionId IS NULL OR cs.SectionId = @SectionId)
+              AND (@ExamType  IS NULL OR ex.ExamType  = @ExamType)
+              AND (@From      IS NULL OR ex.ExamDate >= @From)
+              AND (@To        IS NULL OR ex.ExamDate <= @To)
+            ORDER BY ex.ExamDate, ex.StartTime, c.CourseCode, cs.SectionCode;
+            """;
+        SqlRepositoryHelper.AddParameter(cmd, "@TeacherId", SqlDbType.BigInt, teacherId);
+        SqlRepositoryHelper.AddParameter(cmd, "@SectionId", SqlDbType.BigInt, sectionId);
+        SqlRepositoryHelper.AddParameter(cmd, "@ExamType", SqlDbType.TinyInt, examType);
+        SqlRepositoryHelper.AddParameter(cmd, "@From", SqlDbType.Date, from);
+        SqlRepositoryHelper.AddParameter(cmd, "@To", SqlDbType.Date, to);
+
+        var list = new List<TeacherExamScheduleDto>();
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            list.Add(ReadExam(reader));
+
+        return Ok(list);
+    }
+
     // ── Helper methods ────────────────────────────────────────────────────────
 
     private static async Task<TeacherProfileDto?> FindTeacherProfileAsync(
@@ -371,4 +425,19 @@ public sealed class TeacherSectionRepository(IDbConnectionFactory connectionFact
         DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("EffectiveFrom"))),
         DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("EffectiveTo"))),
         SqlRepositoryHelper.GetNullableString(reader, "Note"));
+
+    private static TeacherExamScheduleDto ReadExam(SqlDataReader reader) => new(
+        reader.GetInt64(reader.GetOrdinal("SectionId")),
+        reader.GetString(reader.GetOrdinal("SectionCode")),
+        reader.GetString(reader.GetOrdinal("CourseCode")),
+        reader.GetString(reader.GetOrdinal("CourseName")),
+        reader.GetInt64(reader.GetOrdinal("ExamId")),
+        reader.GetString(reader.GetOrdinal("ExamName")),
+        reader.GetByte(reader.GetOrdinal("ExamType")),
+        DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("ExamDate"))),
+        reader.GetString(reader.GetOrdinal("StartTime")),
+        reader.GetInt16(reader.GetOrdinal("DurationMinutes")),
+        SqlRepositoryHelper.GetNullableString(reader, "Room"),
+        SqlRepositoryHelper.GetNullableString(reader, "Note"),
+        reader.GetDateTime(reader.GetOrdinal("CreatedAt")));
 }

@@ -21,4 +21,7 @@ public sealed class TeacherSectionService(ITeacherSectionRepository teacherSecti
 
     public Task<ActionResult<IReadOnlyList<TeacherScheduleDto>>> GetSchedule(long teacherId, DateOnly? from, DateOnly? to, long? sectionId, CancellationToken cancellationToken)
         => teacherSectionRepository.GetSchedule(teacherId, from, to, sectionId, cancellationToken);
+
+    public Task<ActionResult<IReadOnlyList<TeacherExamScheduleDto>>> GetExams(long teacherId, DateOnly? from, DateOnly? to, long? sectionId, byte? examType, CancellationToken cancellationToken)
+        => teacherSectionRepository.GetExams(teacherId, from, to, sectionId, examType, cancellationToken);
 }
