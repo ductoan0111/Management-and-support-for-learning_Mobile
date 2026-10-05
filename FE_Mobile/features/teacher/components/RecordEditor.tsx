@@ -62,7 +62,18 @@ function DateField({ field, value, disabled, onChange }: { field: Field; value: 
       {withTime && !!value && <IconButton icon="time-outline" label="Chọn giờ" disabled={disabled} onPress={() => setMode("time")} />}
       {!!value && !field.required && <IconButton icon="close" label="Xóa" disabled={disabled} onPress={() => onChange("")} />}
     </View>
-    {mode && <DateTimePicker value={current} mode={mode} is24Hour display={Platform.OS === "ios" ? "inline" : "default"} onChange={picked} />}
+    {mode && <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" }}>
+      <DateTimePicker
+        value={current}
+        mode={mode}
+        is24Hour
+        display={Platform.OS === "ios" ? "inline" : "default"}
+        accentColor={colors.primary}
+        textColor={colors.ink}
+        themeVariant="light"
+        onChange={picked}
+      />
+    </View>}
     {Platform.OS === "ios" && !!mode && <Button label="Xong" icon="checkmark" onPress={() => setMode(null)} />}
   </View>;
 }
