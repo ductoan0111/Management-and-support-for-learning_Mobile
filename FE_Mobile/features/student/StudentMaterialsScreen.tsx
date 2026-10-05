@@ -1,48 +1,20 @@
-import { studentRequest, type StudentMaterial } from "@/api/student";
+import { getStudentMaterials } from "@/api/student";
 import AppScreen from "@/components/AppScreen";
 import BackHeader from "@/components/BackHeader";
 import { colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
-
-function httpUrl(value: string | null): string | null {
-  if (!value) return null;
-  try {
-    const url = new URL(value.trim());
-    return (url.protocol === "https:" || url.protocol === "http:") && url.hostname
-      ? url.href
-      : null;
-  } catch {
-    return null;
-  }
-}
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { EmptyState, FeedbackText, formatDateTime, httpUrl, IconButton, StatusPill, studentUi } from "./components/StudentUI";
+import { useStudentData } from "./useStudentData";
 
 export default function StudentMaterialsScreen() {
-  const [materials, setMaterials] = useState<StudentMaterial[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [linkError, setLinkError] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError("");
-    void studentRequest<StudentMaterial[]>("/materials")
-      .then((items) => {
-        if (active) setMaterials(items);
-      })
-      .catch((reason: unknown) => {
-        if (!active) return;
-        setMaterials([]);
-        setError(reason instanceof Error ? reason.message : "Không tải được tài liệu.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => { active = false; };
-  }, [refreshKey]);
+  const loadMaterials = useCallback(() => getStudentMaterials({ search: appliedSearch.trim() || undefined }), [appliedSearch]);
+  const state = useStudentData(loadMaterials);
+  const materials = state.data ?? [];
 
   async function openLink(url: string) {
     setLinkError("");
@@ -55,44 +27,63 @@ export default function StudentMaterialsScreen() {
 
   return (
     <AppScreen>
-      <BackHeader title="Tài liệu học tập" subtitle="Tài liệu từ các lớp học phần của bạn" />
-      <View style={styles.toolbar}>
-        <Text style={styles.count}>{loading ? "Đang tải..." : `${materials.length} tài liệu`}</Text>
-        <Pressable
-          accessibilityLabel="Tải lại tài liệu"
-          accessibilityRole="button"
-          disabled={loading}
-          onPress={() => setRefreshKey((key) => key + 1)}
-          style={[styles.refreshButton, loading && styles.disabled]}
-        >
-          <Ionicons name="refresh" size={20} color={colors.primary} />
-        </Pressable>
+      <BackHeader title="Tài liệu học tập" subtitle="Xem tài liệu, file và liên kết từ các lớp học phần" />
+
+      <View style={styles.searchRow}>
+        <View style={styles.inputWrap}>
+          <Ionicons name="search-outline" size={18} color={colors.muted} />
+          <TextInput
+            accessibilityLabel="Tìm tài liệu"
+            autoCapitalize="none"
+            onChangeText={setSearch}
+            onSubmitEditing={() => setAppliedSearch(search)}
+            placeholder="Tìm theo tiêu đề hoặc mô tả"
+            placeholderTextColor="#94A3B8"
+            returnKeyType="search"
+            style={styles.searchInput}
+            value={search}
+          />
+        </View>
+        <IconButton icon="search" label="Tìm kiếm tài liệu" onPress={() => setAppliedSearch(search)} />
+        <IconButton icon="refresh" label="Tải lại tài liệu" disabled={state.loading} onPress={() => void state.refresh()} />
       </View>
 
-      {loading ? <Text style={styles.message}>Đang tải tài liệu...</Text> : null}
-      {!loading && error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-      {linkError ? <Text accessibilityRole="alert" style={styles.error}>{linkError}</Text> : null}
-      {!loading && !error && materials.length === 0 ? (
-        <Text style={styles.message}>Chưa có tài liệu nào được giảng viên công bố.</Text>
+      <View style={studentUi.splitRow}>
+        <Text style={studentUi.sectionTitle}>{state.loading ? "Đang tải..." : `${materials.length} tài liệu`}</Text>
+        {appliedSearch ? <StatusPill label={`Từ khóa: ${appliedSearch}`} tone="muted" /> : null}
+      </View>
+      {state.loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : null}
+      <FeedbackText message={state.error || linkError} />
+
+      {!state.loading && !state.error && !materials.length ? (
+        <EmptyState
+          title="Chưa có tài liệu phù hợp"
+          detail="Thử đổi từ khóa tìm kiếm hoặc chờ giảng viên công bố tài liệu mới."
+          icon="document-text-outline"
+        />
       ) : null}
 
-      {!loading && !error && materials.map((material) => {
+      {materials.map((material) => {
         const fileUrl = httpUrl(material.fileUrl);
         const externalUrl = httpUrl(material.externalUrl);
         return (
-          <View key={material.materialId} style={styles.card}>
-            <Text style={styles.course}>{material.courseCode} · {material.courseName}</Text>
-            <Text style={styles.title}>{material.title}</Text>
-            {material.description ? <Text style={styles.description}>{material.description}</Text> : null}
-            {material.materialType ? <Text style={styles.type}>{material.materialType}</Text> : null}
+          <View key={material.materialId} style={studentUi.flatCard}>
+            <View style={studentUi.splitRow}>
+              <Text style={studentUi.code}>{material.courseCode}</Text>
+              {material.materialType ? <StatusPill label={material.materialType} /> : null}
+            </View>
+            <Text style={studentUi.title}>{material.title}</Text>
+            <Text style={studentUi.muted}>{material.courseName}</Text>
+            {material.description ? <Text style={studentUi.text}>{material.description}</Text> : null}
+            <Text style={studentUi.muted}>Đăng bởi {material.uploadedByFullName} · {formatDateTime(material.createdAt)}</Text>
             <View style={styles.actions}>
               {fileUrl ? (
                 <Pressable
                   accessibilityRole="link"
                   onPress={() => void openLink(fileUrl)}
-                  style={styles.linkButton}
+                  style={({ pressed }) => [styles.linkButton, pressed ? { opacity: 0.76 } : null]}
                 >
-                  <Ionicons name="open-outline" size={17} color={colors.surface} />
+                  <Ionicons name="document-attach-outline" size={18} color="#FFFFFF" />
                   <Text style={styles.linkText}>Mở tài liệu</Text>
                 </Pressable>
               ) : null}
@@ -100,9 +91,9 @@ export default function StudentMaterialsScreen() {
                 <Pressable
                   accessibilityRole="link"
                   onPress={() => void openLink(externalUrl)}
-                  style={styles.linkButton}
+                  style={({ pressed }) => [styles.linkButton, pressed ? { opacity: 0.76 } : null]}
                 >
-                  <Ionicons name="open-outline" size={17} color={colors.surface} />
+                  <Ionicons name="open-outline" size={18} color="#FFFFFF" />
                   <Text style={styles.linkText}>Mở liên kết</Text>
                 </Pressable>
               ) : null}
@@ -118,92 +109,56 @@ export default function StudentMaterialsScreen() {
 }
 
 const styles = StyleSheet.create({
-  toolbar: {
+  searchRow: {
     alignItems: "center",
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 8,
     marginBottom: 14,
   },
-  count: {
-    color: colors.muted,
-    fontSize: 14,
-  },
-  refreshButton: {
+  inputWrap: {
     alignItems: "center",
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
+    flex: 1,
+    flexDirection: "row",
+    minHeight: 48,
+    paddingHorizontal: 12,
   },
-  disabled: { opacity: 0.5 },
-  message: {
-    color: colors.muted,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 10,
-  },
-  error: {
-    color: colors.danger,
-    fontSize: 14,
-    lineHeight: 21,
-    marginBottom: 12,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 16,
-  },
-  course: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: "700",
-    marginBottom: 7,
-  },
-  title: {
+  searchInput: {
     color: colors.ink,
-    fontSize: 17,
-    fontWeight: "800",
+    flex: 1,
+    fontSize: 15,
+    minHeight: 46,
+    paddingHorizontal: 8,
   },
-  description: {
-    color: colors.muted,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 7,
-  },
-  type: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 8,
+  loader: {
+    marginBottom: 12,
   },
   actions: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 12,
+    marginTop: 2,
   },
   linkButton: {
     alignItems: "center",
     backgroundColor: colors.primary,
     borderRadius: 8,
     flexDirection: "row",
-    gap: 6,
-    minHeight: 40,
-    paddingHorizontal: 12,
+    gap: 7,
+    minHeight: 44,
+    paddingHorizontal: 13,
   },
   linkText: {
-    color: colors.surface,
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   invalidLink: {
     color: colors.danger,
     fontSize: 13,
-    marginTop: 8,
+    lineHeight: 20,
   },
 });
