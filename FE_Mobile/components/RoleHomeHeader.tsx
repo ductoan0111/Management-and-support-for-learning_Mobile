@@ -1,4 +1,5 @@
 import { colors } from "@/constants/theme";
+import { authSession } from "@/features/auth/authSession";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -23,7 +24,10 @@ export default function RoleHomeHeader({
       </View>
       <Pressable
         accessibilityLabel="Đăng xuất"
-        onPress={() => router.replace("/login")}
+        onPress={() => {
+          authSession.logout();
+          router.replace("/login");
+        }}
         style={styles.logout}
       >
         <Ionicons name="log-out-outline" size={22} color={colors.primary} />
