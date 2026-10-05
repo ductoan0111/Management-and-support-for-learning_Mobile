@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, KeyRound, Shield, Users, GraduationCap, Loader2, Pencil, Search, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, KeyRound, Shield, Users, GraduationCap, Loader2, Pencil, Search, Trash2 } from "lucide-react";
 import type {
   AdminRecord,
   LookupState,
@@ -14,7 +14,7 @@ type ResourceTableProps = {
   lookups: LookupState;
   onDelete: (row: AdminRecord) => void;
   onEdit: (row: AdminRecord) => void;
-  onAction: (row: AdminRecord, mode: "role" | "password" | "teachers" | "students") => void;
+  onAction: (row: AdminRecord, mode: "role" | "password" | "teachers" | "students" | "schedules") => void;
   onFilterChange: (key: string, value: string) => void;
   onPageChange: (page: number) => void;
   onSearchChange: (value: string) => void;
@@ -119,6 +119,7 @@ export function ResourceTable({
                         {resource.key === "courseSections" && <>
                           <button type="button" className="icon-button small" title="Phân công giảng viên" disabled={isSaving} onClick={() => onAction(row, "teachers")}><GraduationCap size={16} /></button>
                           <button type="button" className="icon-button small" title="Quản lý sinh viên" disabled={isSaving} onClick={() => onAction(row, "students")}><Users size={16} /></button>
+                          <button type="button" className="icon-button small" title="Quản lý lịch học" disabled={isSaving} onClick={() => onAction(row, "schedules")}><CalendarDays size={16} /></button>
                         </>}
                         <button
                           className="icon-button small"

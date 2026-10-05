@@ -869,6 +869,13 @@ td {
 .access-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 14px; }
 .action-modal .table-wrap { max-width: 100%; }
 .row-actions { flex-wrap: wrap; }
+.schedule-dialog-description { color: var(--muted); margin: -8px 0 0; }
+.schedule-toolbar { align-items: center; display: flex; justify-content: space-between; gap: 12px; }
+.schedule-toolbar > span { color: var(--muted); font-size: 0.9rem; }
+.schedule-note { grid-column: 1 / -1; }
+.schedule-table { min-width: 720px; }
+.schedule-empty { color: var(--muted); padding: 24px; text-align: center; }
+.schedule-empty svg { margin-right: 8px; vertical-align: -4px; }
 
 .login-page {
   align-items: center;

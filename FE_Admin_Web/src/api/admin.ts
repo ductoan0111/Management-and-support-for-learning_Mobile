@@ -6,6 +6,8 @@ import type {
   AdminSession,
   AdminReport,
   AdminStatistics,
+  AdminClassSchedule,
+  SaveAdminClassSchedule,
   PagedResult,
 } from "../types/admin";
 
@@ -185,6 +187,29 @@ export function setAdminUserRole(token: string, id: number, roleId: number) {
 export function resetAdminUserPassword(token: string, id: number, password: string) {
   return request<void>(`/api/admin/users/${id}/password`, token, {
     method: "PUT", body: JSON.stringify({ password }),
+  });
+}
+
+export function listSectionSchedules(sectionId: number, token: string) {
+  return request<AdminClassSchedule[]>(`/api/admin/course-sections/${sectionId}/schedules`, token);
+}
+
+export function saveSectionSchedule(
+  sectionId: number,
+  scheduleId: number | null,
+  token: string,
+  data: SaveAdminClassSchedule,
+) {
+  const path = `/api/admin/course-sections/${sectionId}/schedules${scheduleId === null ? "" : `/${scheduleId}`}`;
+  return request<AdminClassSchedule>(path, token, {
+    method: scheduleId === null ? "POST" : "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteSectionSchedule(sectionId: number, scheduleId: number, token: string) {
+  return request<void>(`/api/admin/course-sections/${sectionId}/schedules/${scheduleId}`, token, {
+    method: "DELETE",
   });
 }
 

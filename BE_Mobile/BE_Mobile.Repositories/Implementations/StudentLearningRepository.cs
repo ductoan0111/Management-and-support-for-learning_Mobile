@@ -670,7 +670,7 @@ public sealed class StudentLearningRepository(IDbConnectionFactory connectionFac
             INNER JOIN dbo.Enrollments e
                 ON e.SectionId = cs.SectionId
                AND e.StudentId = @StudentId
-               AND e.Status = 1
+               AND e.Status IN (1, 2)
             WHERE m.IsVisible = 1
               AND (@SectionId IS NULL OR cs.SectionId = @SectionId)
               AND

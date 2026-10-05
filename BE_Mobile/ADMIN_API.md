@@ -99,6 +99,23 @@ Ví dụ tạo lớp học phần:
 Lớp học phần: `status` 0 đóng, 1 mở, 2 kết thúc. Đăng ký: 0 hủy, 1 đang học, 2 hoàn thành.
 Giảng viên: 0 ngưng công tác, 1 đang công tác. Số tín chỉ từ 1 đến 15.
 
+## Quản lý lịch học
+
+Admin quản lý các buổi học ngay trong thao tác **Quản lý lịch học** của từng lớp học phần.
+Lịch lưu trong `dbo.ClassSchedules`; ngày trong tuần dùng `2` cho Thứ 2 đến `8` cho Chủ nhật.
+
+| Method | Endpoint | Chức năng |
+| --- | --- | --- |
+| GET | `/api/admin/course-sections/{sectionId}/schedules` | Danh sách lịch của lớp |
+| POST | `/api/admin/course-sections/{sectionId}/schedules` | Thêm buổi học |
+| PUT | `/api/admin/course-sections/{sectionId}/schedules/{scheduleId}` | Sửa buổi học |
+| DELETE | `/api/admin/course-sections/{sectionId}/schedules/{scheduleId}` | Xóa buổi học |
+
+Body thêm/sửa gồm `dayOfWeek`, `startTime`, `endTime`, `room`, `building`, `effectiveFrom`,
+`effectiveTo` và `note`. Thời gian gửi theo `HH:mm:ss`, ngày theo `YYYY-MM-DD`.
+Không cho lưu nếu giờ kết thúc trước giờ bắt đầu, khoảng ngày không hợp lệ hoặc buổi học
+bị trùng thứ/giờ trong cùng khoảng ngày của lớp đó.
+
 ## Ràng buộc
 
 - Đặt học kỳ hiện tại sẽ bỏ cờ hiện tại của các học kỳ khác trong cùng transaction.

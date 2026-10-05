@@ -24,6 +24,25 @@ public sealed class AdminSectionManagementRepository(IDbConnectionFactory factor
         FROM dbo.Enrollments e JOIN dbo.Students s ON s.StudentId = e.StudentId
         JOIN dbo.Users u ON u.UserId = s.UserId WHERE e.SectionId = @SectionId
         """;
+    private const string ScheduleSelect = """
+        SELECT ScheduleId, SectionId, DayOfWeek,
+               CONVERT(VARCHAR(8), StartTime, 108) AS StartTime,
+               CONVERT(VARCHAR(8), EndTime, 108) AS EndTime,
+               Room, Building, EffectiveFrom, EffectiveTo, Note
+        FROM dbo.ClassSchedules
+        """;
+    private const string ScheduleOverlapGuard = """
+        IF EXISTS (
+            SELECT 1 FROM dbo.ClassSchedules WITH (UPDLOCK, HOLDLOCK)
+            WHERE SectionId = @SectionId
+              AND DayOfWeek = @DayOfWeek
+              AND EffectiveFrom <= @EffectiveTo
+              AND EffectiveTo >= @EffectiveFrom
+              AND StartTime < @EndTime
+              AND EndTime > @StartTime
+              AND (@ScheduleId IS NULL OR ScheduleId <> @ScheduleId)
+        ) THROW 50001, N'Lịch học này trùng thời gian với một buổi khác của cùng lớp.', 1;
+        """;
 
     public Task<PagedResult<AdminSectionTeacherDto>> TeachersAsync(long sectionId, AdminPageQuery query, CancellationToken cancellationToken) =>
         PageAsync(sectionId, query, "SELECT COUNT(*) FROM dbo.SectionTeachers WHERE SectionId = @SectionId;",
@@ -67,6 +86,50 @@ public sealed class AdminSectionManagementRepository(IDbConnectionFactory factor
     public Task<bool> RemoveTeacherAsync(long sectionId, long teacherId, CancellationToken cancellationToken) =>
         db.ExecuteAsync(SectionGuard + "DELETE FROM dbo.SectionTeachers WHERE SectionId = @SectionId AND TeacherId = @TeacherId;",
             p => Pair(p, sectionId, "@TeacherId", teacherId), cancellationToken);
+
+    public async Task<IReadOnlyList<AdminClassScheduleDto>> SchedulesAsync(long sectionId, CancellationToken cancellationToken)
+    {
+        var rows = await db.QueryAsync(SectionGuard + ScheduleSelect + " WHERE SectionId = @SectionId ORDER BY DayOfWeek, StartTime;",
+            p => AdminSql.Add(p, "@SectionId", SqlDbType.BigInt, sectionId), ReadSchedule, cancellationToken);
+        return rows;
+    }
+
+    public async Task<AdminClassScheduleDto?> SaveScheduleAsync(long sectionId, long? scheduleId,
+        SaveAdminClassScheduleRequest request, CancellationToken cancellationToken)
+    {
+        var sql = SectionGuard + """
+            IF @ScheduleId IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM dbo.ClassSchedules WITH (UPDLOCK, HOLDLOCK)
+                WHERE SectionId = @SectionId AND ScheduleId = @ScheduleId)
+                THROW 50004, 'Schedule not found.', 1;
+            """ + ScheduleOverlapGuard + """
+            IF @ScheduleId IS NULL
+            BEGIN
+                INSERT INTO dbo.ClassSchedules
+                    (SectionId, DayOfWeek, StartTime, EndTime, Room, Building, EffectiveFrom, EffectiveTo, Note)
+                VALUES
+                    (@SectionId, @DayOfWeek, @StartTime, @EndTime, @Room, @Building, @EffectiveFrom, @EffectiveTo, @Note);
+                SET @ScheduleId = CONVERT(BIGINT, SCOPE_IDENTITY());
+            END
+            ELSE
+                UPDATE dbo.ClassSchedules
+                SET DayOfWeek = @DayOfWeek, StartTime = @StartTime, EndTime = @EndTime,
+                    Room = @Room, Building = @Building, EffectiveFrom = @EffectiveFrom,
+                    EffectiveTo = @EffectiveTo, Note = @Note
+                WHERE SectionId = @SectionId AND ScheduleId = @ScheduleId;
+            """ + ScheduleSelect + " WHERE SectionId = @SectionId AND ScheduleId = @ScheduleId;";
+
+        return (await db.QueryAsync(sql, p => AddScheduleParameters(p, sectionId, scheduleId, request),
+            ReadSchedule, cancellationToken, transaction: true)).SingleOrDefault();
+    }
+
+    public Task<bool> DeleteScheduleAsync(long sectionId, long scheduleId, CancellationToken cancellationToken) =>
+        db.ExecuteAsync(SectionGuard + "DELETE FROM dbo.ClassSchedules WHERE SectionId = @SectionId AND ScheduleId = @ScheduleId;",
+            p =>
+            {
+                AdminSql.Add(p, "@SectionId", SqlDbType.BigInt, sectionId);
+                AdminSql.Add(p, "@ScheduleId", SqlDbType.BigInt, scheduleId);
+            }, cancellationToken);
 
     public async Task<AdminEnrollmentDto?> EnrollAsync(long sectionId, long studentId, byte status, CancellationToken cancellationToken) =>
         (await db.QueryAsync(SectionGuard + """
@@ -166,4 +229,31 @@ public sealed class AdminSectionManagementRepository(IDbConnectionFactory factor
         new(r.GetInt64(0), r.GetInt64(1), r.GetString(2), r.GetString(3), r.GetBoolean(4), r.GetDateTime(5));
     private static AdminEnrollmentDto ReadStudent(SqlDataReader r) =>
         new(r.GetInt64(0), r.GetInt64(1), r.GetInt64(2), r.GetString(3), r.GetString(4), r.GetByte(5), r.GetDateTime(6));
+
+    private static void AddScheduleParameters(SqlParameterCollection p, long sectionId, long? scheduleId,
+        SaveAdminClassScheduleRequest request)
+    {
+        AdminSql.Add(p, "@SectionId", SqlDbType.BigInt, sectionId);
+        AdminSql.Add(p, "@ScheduleId", SqlDbType.BigInt, scheduleId);
+        AdminSql.Add(p, "@DayOfWeek", SqlDbType.TinyInt, request.DayOfWeek);
+        AdminSql.Add(p, "@StartTime", SqlDbType.Time, request.StartTime.ToTimeSpan());
+        AdminSql.Add(p, "@EndTime", SqlDbType.Time, request.EndTime.ToTimeSpan());
+        AdminSql.Add(p, "@Room", SqlDbType.NVarChar, string.IsNullOrWhiteSpace(request.Room) ? null : request.Room.Trim());
+        AdminSql.Add(p, "@Building", SqlDbType.NVarChar, string.IsNullOrWhiteSpace(request.Building) ? null : request.Building.Trim());
+        AdminSql.Add(p, "@EffectiveFrom", SqlDbType.Date, request.EffectiveFrom);
+        AdminSql.Add(p, "@EffectiveTo", SqlDbType.Date, request.EffectiveTo);
+        AdminSql.Add(p, "@Note", SqlDbType.NVarChar, string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim());
+    }
+
+    private static AdminClassScheduleDto ReadSchedule(SqlDataReader r) => new(
+        r.GetInt64(r.GetOrdinal("ScheduleId")),
+        r.GetInt64(r.GetOrdinal("SectionId")),
+        r.GetByte(r.GetOrdinal("DayOfWeek")),
+        r.GetString(r.GetOrdinal("StartTime")),
+        r.GetString(r.GetOrdinal("EndTime")),
+        AdminSql.Text(r, "Room"),
+        AdminSql.Text(r, "Building"),
+        DateOnly.FromDateTime(r.GetDateTime(r.GetOrdinal("EffectiveFrom"))),
+        DateOnly.FromDateTime(r.GetDateTime(r.GetOrdinal("EffectiveTo"))),
+        AdminSql.Text(r, "Note"));
 }
