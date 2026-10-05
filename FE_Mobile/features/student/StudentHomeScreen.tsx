@@ -7,6 +7,7 @@ import type { Href } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 const learningHref = "/student/learning" as Href;
+const materialsHref = "/student/materials" as Href;
 const tasksHref = "/student/tasks" as Href;
 
 const upcomingDeadlines = [
@@ -51,6 +52,12 @@ export default function StudentHomeScreen() {
         icon="book-outline"
         title="Học tập"
         subtitle="Môn học, lịch học, lịch thi và điểm số"
+      />
+      <ActionTile
+        href={materialsHref}
+        icon="document-text-outline"
+        title="Tài liệu học tập"
+        subtitle="Tài liệu và liên kết từ giảng viên"
       />
       <ActionTile
         href={tasksHref}
