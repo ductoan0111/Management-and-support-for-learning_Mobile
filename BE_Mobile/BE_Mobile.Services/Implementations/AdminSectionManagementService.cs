@@ -13,6 +13,12 @@ public sealed class AdminSectionManagementService(IAdminSectionManagementReposit
         AdminOperation.RunAsync(() => repository.AssignTeacherAsync(sectionId, teacherId, request.IsPrimary, cancellationToken), request);
     public Task<OperationResult> RemoveTeacherAsync(long sectionId, long teacherId, CancellationToken cancellationToken) =>
         AdminOperation.DeleteAsync(() => repository.RemoveTeacherAsync(sectionId, teacherId, cancellationToken));
+    public Task<OperationResult<IReadOnlyList<AdminClassScheduleDto>>> SchedulesAsync(long sectionId, CancellationToken cancellationToken) =>
+        AdminOperation.RunAsync<IReadOnlyList<AdminClassScheduleDto>>(async () => await repository.SchedulesAsync(sectionId, cancellationToken));
+    public Task<OperationResult<AdminClassScheduleDto>> SaveScheduleAsync(long sectionId, long? scheduleId, SaveAdminClassScheduleRequest request, CancellationToken cancellationToken) =>
+        AdminOperation.RunAsync(() => repository.SaveScheduleAsync(sectionId, scheduleId, request, cancellationToken), request);
+    public Task<OperationResult> DeleteScheduleAsync(long sectionId, long scheduleId, CancellationToken cancellationToken) =>
+        AdminOperation.DeleteAsync(() => repository.DeleteScheduleAsync(sectionId, scheduleId, cancellationToken));
     public Task<OperationResult<PagedResult<AdminEnrollmentDto>>> StudentsAsync(long sectionId, AdminPageQuery query, CancellationToken cancellationToken) =>
         AdminOperation.RunAsync<PagedResult<AdminEnrollmentDto>>(async () => await repository.StudentsAsync(sectionId, query, cancellationToken), query);
     public Task<OperationResult<AdminEnrollmentDto>> EnrollAsync(long sectionId, long studentId, SaveAdminEnrollmentRequest request, CancellationToken cancellationToken) =>

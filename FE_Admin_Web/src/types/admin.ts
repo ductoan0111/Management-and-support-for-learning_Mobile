@@ -5,6 +5,21 @@ export type AdminPrimitive = string | number | boolean | null | undefined;
 
 export type AdminRecord = Record<string, AdminPrimitive>;
 
+export type AdminClassSchedule = {
+  scheduleId: number;
+  sectionId: number;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  room?: string | null;
+  building?: string | null;
+  effectiveFrom: string;
+  effectiveTo: string;
+  note?: string | null;
+};
+
+export type SaveAdminClassSchedule = Omit<AdminClassSchedule, "scheduleId" | "sectionId">;
+
 export type PagedResult<T = AdminRecord> = {
   items: T[];
   page: number;

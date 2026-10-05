@@ -18,6 +18,7 @@ import { ResourceDialog } from "./components/admin/ResourceDialog";
 import { ResourceTable } from "./components/admin/ResourceTable";
 import { UserAccessDialog } from "./components/admin/UserAccessDialog";
 import { SectionMembersDialog } from "./components/admin/SectionMembersDialog";
+import { SectionSchedulesDialog } from "./components/admin/SectionSchedulesDialog";
 import { emptyLookups } from "./config/adminOptions";
 import { resourceConfigs } from "./config/adminResources";
 import type {
@@ -68,7 +69,7 @@ export default function App() {
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [form, setForm] = useState<AdminFormState>({});
   const [refreshKey, setRefreshKey] = useState(0);
-  const [action, setAction] = useState<{ row: AdminRecord; mode: "role" | "password" | "teachers" | "students" } | null>(null);
+  const [action, setAction] = useState<{ row: AdminRecord; mode: "role" | "password" | "teachers" | "students" | "schedules" } | null>(null);
 
   const activeResource = useMemo(
     () => resourceConfigs.find((resource) => resource.key === activeKey) ?? null,
@@ -366,6 +367,11 @@ export default function App() {
         }} />}
       {action && (action.mode === "teachers" || action.mode === "students") && <SectionMembersDialog
         row={action.row} kind={action.mode} token={session.accessToken}
+        onClose={() => setAction(null)} onUnauthorized={logout} onChanged={refresh} />}
+      {action?.mode === "schedules" && <SectionSchedulesDialog
+        row={action.row}
+        semester={lookups.semesters.find(item => String(item.semesterId) === String(action.row.semesterId))}
+        token={session.accessToken}
         onClose={() => setAction(null)} onUnauthorized={logout} onChanged={refresh} />}
     </>
   );

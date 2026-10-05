@@ -11,6 +11,19 @@ namespace BE_Mobile.Controllers.Admin;
 [Route("api/admin/course-sections/{sectionId:long}")]
 public sealed class AdminSectionManagementController(IAdminSectionManagementService service) : ControllerBase
 {
+    [HttpGet("schedules")]
+    public async Task<ActionResult<IReadOnlyList<AdminClassScheduleDto>>> Schedules(long sectionId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await service.SchedulesAsync(sectionId, cancellationToken));
+    [HttpPost("schedules")]
+    public async Task<ActionResult<AdminClassScheduleDto>> CreateSchedule(long sectionId, SaveAdminClassScheduleRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await service.SaveScheduleAsync(sectionId, null, request, cancellationToken));
+    [HttpPut("schedules/{scheduleId:long}")]
+    public async Task<ActionResult<AdminClassScheduleDto>> UpdateSchedule(long sectionId, long scheduleId, SaveAdminClassScheduleRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await service.SaveScheduleAsync(sectionId, scheduleId, request, cancellationToken));
+    [HttpDelete("schedules/{scheduleId:long}")]
+    public async Task<IActionResult> DeleteSchedule(long sectionId, long scheduleId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await service.DeleteScheduleAsync(sectionId, scheduleId, cancellationToken));
+
     [HttpGet("teachers")]
     public async Task<ActionResult<PagedResult<AdminSectionTeacherDto>>> Teachers(long sectionId, [FromQuery] AdminPageQuery query, CancellationToken cancellationToken) =>
         this.ToActionResult(await service.TeachersAsync(sectionId, query, cancellationToken));
