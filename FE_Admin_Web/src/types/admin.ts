@@ -20,6 +20,22 @@ export type AdminClassSchedule = {
 
 export type SaveAdminClassSchedule = Omit<AdminClassSchedule, "scheduleId" | "sectionId">;
 
+export type AdminExam = {
+  examId: number;
+  sectionId: number;
+  createdByUserId: number;
+  examName: string;
+  examType: number;
+  examDate: string;
+  startTime: string;
+  durationMinutes: number;
+  room?: string | null;
+  note?: string | null;
+  createdAt: string;
+};
+
+export type SaveAdminExam = Omit<AdminExam, "examId" | "sectionId" | "createdByUserId" | "createdAt">;
+
 export type PagedResult<T = AdminRecord> = {
   items: T[];
   page: number;

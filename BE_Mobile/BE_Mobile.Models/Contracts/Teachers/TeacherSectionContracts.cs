@@ -83,3 +83,18 @@ public sealed record TeacherScheduleDto(
     DateOnly EffectiveFrom,
     DateOnly EffectiveTo,
     string? Note);
+
+public sealed record TeacherExamScheduleDto(
+    long SectionId,
+    string SectionCode,
+    string CourseCode,
+    string CourseName,
+    long ExamId,
+    string ExamName,
+    byte ExamType,
+    DateOnly ExamDate,
+    string StartTime,
+    short DurationMinutes,
+    string? Room,
+    string? Note,
+    DateTime CreatedAt);

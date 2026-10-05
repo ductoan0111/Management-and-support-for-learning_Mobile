@@ -31,6 +31,12 @@ public sealed class AdminSectionManagementRepository(IDbConnectionFactory factor
                Room, Building, EffectiveFrom, EffectiveTo, Note
         FROM dbo.ClassSchedules
         """;
+    private const string ExamSelect = """
+        SELECT ExamId, SectionId, CreatedByUserId, ExamName, ExamType, ExamDate,
+               CONVERT(VARCHAR(8), StartTime, 108) AS StartTime,
+               DurationMinutes, Room, Note, CreatedAt
+        FROM dbo.Exams
+        """;
     private const string ScheduleOverlapGuard = """
         IF EXISTS (
             SELECT 1 FROM dbo.ClassSchedules WITH (UPDLOCK, HOLDLOCK)
@@ -129,6 +135,54 @@ public sealed class AdminSectionManagementRepository(IDbConnectionFactory factor
             {
                 AdminSql.Add(p, "@SectionId", SqlDbType.BigInt, sectionId);
                 AdminSql.Add(p, "@ScheduleId", SqlDbType.BigInt, scheduleId);
+            }, cancellationToken);
+
+    public async Task<IReadOnlyList<AdminExamDto>> ExamsAsync(long sectionId, CancellationToken cancellationToken)
+    {
+        var rows = await db.QueryAsync(SectionGuard + ExamSelect + " WHERE SectionId = @SectionId ORDER BY ExamDate, StartTime;",
+            p => AdminSql.Add(p, "@SectionId", SqlDbType.BigInt, sectionId), ReadExam, cancellationToken);
+        return rows;
+    }
+
+    public async Task<AdminExamDto?> SaveExamAsync(long sectionId, long? examId, long createdByUserId,
+        SaveAdminExamRequest request, CancellationToken cancellationToken)
+    {
+        var sql = SectionGuard + """
+            IF @ExamId IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM dbo.Exams WITH (UPDLOCK, HOLDLOCK)
+                WHERE SectionId = @SectionId AND ExamId = @ExamId)
+                THROW 50004, 'Exam not found.', 1;
+            IF NOT EXISTS (
+                SELECT 1 FROM dbo.Users u
+                INNER JOIN dbo.Roles r ON r.RoleId = u.RoleId
+                WHERE u.UserId = @CreatedByUserId AND u.IsActive = 1 AND r.RoleCode = 'ADMIN')
+                THROW 50001, 'CreatedByUserId must be an active ADMIN user.', 1;
+            IF @ExamId IS NULL
+            BEGIN
+                INSERT INTO dbo.Exams
+                    (SectionId, CreatedByUserId, ExamName, ExamType, ExamDate, StartTime, DurationMinutes, Room, Note)
+                VALUES
+                    (@SectionId, @CreatedByUserId, @ExamName, @ExamType, @ExamDate, @StartTime, @DurationMinutes, @Room, @Note);
+                SET @ExamId = CONVERT(BIGINT, SCOPE_IDENTITY());
+            END
+            ELSE
+                UPDATE dbo.Exams
+                SET ExamName = @ExamName, ExamType = @ExamType, ExamDate = @ExamDate,
+                    StartTime = @StartTime, DurationMinutes = @DurationMinutes,
+                    Room = @Room, Note = @Note
+                WHERE SectionId = @SectionId AND ExamId = @ExamId;
+            """ + ExamSelect + " WHERE SectionId = @SectionId AND ExamId = @ExamId;";
+
+        return (await db.QueryAsync(sql, p => AddExamParameters(p, sectionId, examId, createdByUserId, request),
+            ReadExam, cancellationToken, transaction: true)).SingleOrDefault();
+    }
+
+    public Task<bool> DeleteExamAsync(long sectionId, long examId, CancellationToken cancellationToken) =>
+        db.ExecuteAsync(SectionGuard + "DELETE FROM dbo.Exams WHERE SectionId = @SectionId AND ExamId = @ExamId;",
+            p =>
+            {
+                AdminSql.Add(p, "@SectionId", SqlDbType.BigInt, sectionId);
+                AdminSql.Add(p, "@ExamId", SqlDbType.BigInt, examId);
             }, cancellationToken);
 
     public async Task<AdminEnrollmentDto?> EnrollAsync(long sectionId, long studentId, byte status, CancellationToken cancellationToken) =>
@@ -245,6 +299,21 @@ public sealed class AdminSectionManagementRepository(IDbConnectionFactory factor
         AdminSql.Add(p, "@Note", SqlDbType.NVarChar, string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim());
     }
 
+    private static void AddExamParameters(SqlParameterCollection p, long sectionId, long? examId,
+        long createdByUserId, SaveAdminExamRequest request)
+    {
+        AdminSql.Add(p, "@SectionId", SqlDbType.BigInt, sectionId);
+        AdminSql.Add(p, "@ExamId", SqlDbType.BigInt, examId);
+        AdminSql.Add(p, "@CreatedByUserId", SqlDbType.BigInt, createdByUserId);
+        AdminSql.Add(p, "@ExamName", SqlDbType.NVarChar, request.ExamName.Trim(), 200);
+        AdminSql.Add(p, "@ExamType", SqlDbType.TinyInt, request.ExamType);
+        AdminSql.Add(p, "@ExamDate", SqlDbType.Date, request.ExamDate);
+        AdminSql.Add(p, "@StartTime", SqlDbType.Time, request.StartTime.ToTimeSpan());
+        AdminSql.Add(p, "@DurationMinutes", SqlDbType.SmallInt, request.DurationMinutes);
+        AdminSql.Add(p, "@Room", SqlDbType.NVarChar, string.IsNullOrWhiteSpace(request.Room) ? null : request.Room.Trim(), 50);
+        AdminSql.Add(p, "@Note", SqlDbType.NVarChar, string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim(), 500);
+    }
+
     private static AdminClassScheduleDto ReadSchedule(SqlDataReader r) => new(
         r.GetInt64(r.GetOrdinal("ScheduleId")),
         r.GetInt64(r.GetOrdinal("SectionId")),
@@ -256,4 +325,17 @@ public sealed class AdminSectionManagementRepository(IDbConnectionFactory factor
         DateOnly.FromDateTime(r.GetDateTime(r.GetOrdinal("EffectiveFrom"))),
         DateOnly.FromDateTime(r.GetDateTime(r.GetOrdinal("EffectiveTo"))),
         AdminSql.Text(r, "Note"));
+
+    private static AdminExamDto ReadExam(SqlDataReader r) => new(
+        r.GetInt64(r.GetOrdinal("ExamId")),
+        r.GetInt64(r.GetOrdinal("SectionId")),
+        r.GetInt64(r.GetOrdinal("CreatedByUserId")),
+        r.GetString(r.GetOrdinal("ExamName")),
+        r.GetByte(r.GetOrdinal("ExamType")),
+        DateOnly.FromDateTime(r.GetDateTime(r.GetOrdinal("ExamDate"))),
+        r.GetString(r.GetOrdinal("StartTime")),
+        r.GetInt16(r.GetOrdinal("DurationMinutes")),
+        AdminSql.Text(r, "Room"),
+        AdminSql.Text(r, "Note"),
+        r.GetDateTime(r.GetOrdinal("CreatedAt")));
 }

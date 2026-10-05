@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using BE_Mobile.Contracts.Admin;
 using BE_Mobile.Contracts.Common;
 using BE_Mobile.Services.Interfaces;
@@ -24,6 +25,27 @@ public sealed class AdminSectionManagementController(IAdminSectionManagementServ
     public async Task<IActionResult> DeleteSchedule(long sectionId, long scheduleId, CancellationToken cancellationToken) =>
         this.ToActionResult(await service.DeleteScheduleAsync(sectionId, scheduleId, cancellationToken));
 
+    [HttpGet("exams")]
+    public async Task<ActionResult<IReadOnlyList<AdminExamDto>>> Exams(long sectionId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await service.ExamsAsync(sectionId, cancellationToken));
+    [HttpPost("exams")]
+    public async Task<ActionResult<AdminExamDto>> CreateExam(long sectionId, SaveAdminExamRequest request, CancellationToken cancellationToken)
+    {
+        var userId = AdminUserId();
+        if (userId is null) return Unauthorized();
+        return this.ToActionResult(await service.SaveExamAsync(sectionId, null, userId.Value, request, cancellationToken));
+    }
+    [HttpPut("exams/{examId:long}")]
+    public async Task<ActionResult<AdminExamDto>> UpdateExam(long sectionId, long examId, SaveAdminExamRequest request, CancellationToken cancellationToken)
+    {
+        var userId = AdminUserId();
+        if (userId is null) return Unauthorized();
+        return this.ToActionResult(await service.SaveExamAsync(sectionId, examId, userId.Value, request, cancellationToken));
+    }
+    [HttpDelete("exams/{examId:long}")]
+    public async Task<IActionResult> DeleteExam(long sectionId, long examId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await service.DeleteExamAsync(sectionId, examId, cancellationToken));
+
     [HttpGet("teachers")]
     public async Task<ActionResult<PagedResult<AdminSectionTeacherDto>>> Teachers(long sectionId, [FromQuery] AdminPageQuery query, CancellationToken cancellationToken) =>
         this.ToActionResult(await service.TeachersAsync(sectionId, query, cancellationToken));
@@ -42,6 +64,9 @@ public sealed class AdminSectionManagementController(IAdminSectionManagementServ
     [HttpDelete("students/{studentId:long}")]
     public async Task<IActionResult> CancelEnrollment(long sectionId, long studentId, CancellationToken cancellationToken) =>
         this.ToActionResult(await service.CancelEnrollmentAsync(sectionId, studentId, cancellationToken));
+
+    private long? AdminUserId() =>
+        long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) ? userId : null;
 }
 
 [ApiController]

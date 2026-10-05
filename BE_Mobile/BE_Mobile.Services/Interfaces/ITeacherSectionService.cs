@@ -15,4 +15,5 @@ public interface ITeacherSectionService
 
     // ── Thời khóa biểu / Lịch dạy ────────────────────────────────────────────
     Task<ActionResult<IReadOnlyList<TeacherScheduleDto>>> GetSchedule(long teacherId, DateOnly? from, DateOnly? to, long? sectionId, CancellationToken cancellationToken);
+    Task<ActionResult<IReadOnlyList<TeacherExamScheduleDto>>> GetExams(long teacherId, DateOnly? from, DateOnly? to, long? sectionId, byte? examType, CancellationToken cancellationToken);
 }
