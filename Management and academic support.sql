@@ -1,4 +1,4 @@
-﻿
+
 -- Nếu chạy bằng sqlcmd, dùng -f i:65001 để đọc đúng tệp UTF-8 và giữ nguyên tiếng Việt.
 USE master;
 GO
@@ -1071,7 +1071,7 @@ BEGIN
         ON s.StudentId = e.StudentId
     INNER JOIN dbo.Users u
         ON u.UserId = s.UserId
-    WHERE e.SectionId = @SectionId
+    WHERE e.SectionId = @SectionId AND e.Status <> 0
     ORDER BY s.StudentCode;
 END;
 GO

@@ -656,7 +656,15 @@ export const resourceConfigs: ResourceConfig[] = [
             "semesterName",
           ]),
       },
-      { key: "maxStudents", label: "Sĩ số" },
+      {
+        key: "maxStudents",
+        label: "Sĩ số",
+        render: (row) => (
+          <span>
+            {row.enrolledCount ?? 0}/{row.maxStudents ?? "—"}
+          </span>
+        ),
+      },
       {
         key: "status",
         label: "Trạng thái",
