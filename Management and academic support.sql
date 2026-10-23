@@ -898,12 +898,9 @@ SELECT
     (
         SUM
         (
-            CASE
-                WHEN sg.Score IS NULL THEN 0
-                ELSE (sg.Score / NULLIF(gc.MaxScore, 0))
-                     * gc.WeightPercent
-                     / 10.0
-            END
+            (sg.Score / NULLIF(gc.MaxScore, 0))
+            * gc.WeightPercent
+            / 10.0
         )
         AS DECIMAL(5,2)
     ) AS WeightedScore10
@@ -914,16 +911,23 @@ INNER JOIN dbo.Courses c
     ON c.CourseId = cs.CourseId
 INNER JOIN dbo.GradeComponents gc
     ON gc.SectionId = cs.SectionId
-LEFT JOIN dbo.StudentGrades sg
+INNER JOIN dbo.StudentGrades sg
     ON sg.GradeComponentId = gc.GradeComponentId
    AND sg.StudentId = e.StudentId
+   AND sg.Score IS NOT NULL
 WHERE e.Status IN (1,2)
 GROUP BY
     e.StudentId,
     e.SectionId,
     c.CourseCode,
     c.CourseName,
-    c.Credits;
+    c.Credits
+HAVING COUNT(sg.Score) = (
+    SELECT COUNT(1)
+    FROM dbo.GradeComponents gc2
+    WHERE gc2.SectionId = e.SectionId
+)
+AND COUNT(sg.Score) > 0;
 GO
 
 /*==============================================================================

@@ -237,8 +237,8 @@ function GradesView({ grades, scores }: { grades: StudentGrade[]; scores: Studen
             </View>
             <Text style={studentUi.title}>{title}</Text>
             <View style={studentUi.row}>
-              <StatusPill label={`Tổng kết: ${formatNumber(score?.weightedScore10)}`} tone={score ? "success" : "muted"} />
-              <StatusPill label={`GPA4: ${formatNumber(score?.gpa4)}`} tone={score?.gpa4 === null || score?.gpa4 === undefined ? "muted" : "primary"} />
+              <StatusPill label={`Tổng kết: ${score ? formatNumber(score.weightedScore10) : "-"}`} tone={score ? "success" : "muted"} />
+              <StatusPill label={`GPA4: ${score?.gpa4 !== null && score?.gpa4 !== undefined ? formatNumber(score.gpa4) : "-"}`} tone={score ? "primary" : "muted"} />
             </View>
             {sectionGrades.map((grade) => (
               <View key={grade.gradeComponentId} style={styles.gradeRow}>
