@@ -9,8 +9,8 @@ namespace BE_Mobile.Repositories.Implementations;
 public sealed class AdminCourseSectionRepository(IDbConnectionFactory factory) : IAdminCourseSectionRepository
 {
     private readonly AdminSql db = new(factory);
-    private const string SelectSql = "SELECT SectionId, CourseId, SemesterId, SectionCode, SectionName, MaxStudents, Status FROM dbo.CourseSections";
-    private const string FilterSql = "WHERE (@Search IS NULL OR SectionCode LIKE @Search OR SectionName LIKE @Search) AND (@CourseId IS NULL OR CourseId = @CourseId) AND (@SemesterId IS NULL OR SemesterId = @SemesterId) AND (@Status IS NULL OR Status = @Status)";
+    private const string SelectSql = "SELECT SectionId, CourseId, SemesterId, SectionCode, SectionName, MaxStudents, Status, (SELECT COUNT(*) FROM dbo.Enrollments e WHERE e.SectionId = cs.SectionId AND e.Status <> 0) AS EnrolledCount FROM dbo.CourseSections cs";
+    private const string FilterSql = "WHERE (@Search IS NULL OR cs.SectionCode LIKE @Search OR cs.SectionName LIKE @Search) AND (@CourseId IS NULL OR cs.CourseId = @CourseId) AND (@SemesterId IS NULL OR cs.SemesterId = @SemesterId) AND (@Status IS NULL OR cs.Status = @Status)";
 
     public async Task<PagedResult<AdminCourseSectionDto>> ListAsync(AdminCourseSectionQuery query, CancellationToken cancellationToken)
     {
@@ -23,15 +23,15 @@ public sealed class AdminCourseSectionRepository(IDbConnectionFactory factory) :
             AdminSql.Add(p, "@Offset", SqlDbType.Int, (query.Page - 1) * query.PageSize);
             AdminSql.Add(p, "@PageSize", SqlDbType.Int, query.PageSize);
         }
-        var count = (await db.QueryAsync("SELECT COUNT(*) FROM dbo.CourseSections " + FilterSql, Parameters,
+        var count = (await db.QueryAsync("SELECT COUNT(*) FROM dbo.CourseSections cs " + FilterSql, Parameters,
             r => r.GetInt32(0), cancellationToken)).Single();
-        var rows = await db.QueryAsync(SelectSql + " " + FilterSql + " ORDER BY SectionId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;",
+        var rows = await db.QueryAsync(SelectSql + " " + FilterSql + " ORDER BY cs.SectionId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;",
             Parameters, Read, cancellationToken);
         return new(rows, query.Page, query.PageSize, count, (int)Math.Ceiling(count / (double)query.PageSize));
     }
 
     public async Task<AdminCourseSectionDto?> GetAsync(long id, CancellationToken cancellationToken) =>
-        (await db.QueryAsync(SelectSql + " WHERE SectionId = @Id;",
+        (await db.QueryAsync(SelectSql + " WHERE cs.SectionId = @Id;",
             p => AdminSql.Add(p, "@Id", SqlDbType.BigInt, id), Read, cancellationToken)).SingleOrDefault();
 
     public async Task<AdminCourseSectionDto?> SaveAsync(long? id, SaveAdminCourseSectionRequest request, CancellationToken cancellationToken)
@@ -52,7 +52,7 @@ public sealed class AdminCourseSectionRepository(IDbConnectionFactory factory) :
             ELSE
                 UPDATE dbo.CourseSections SET CourseId = @CourseId, SemesterId = @SemesterId, SectionCode = @SectionCode, SectionName = @SectionName, MaxStudents = @MaxStudents, Status = @Status WHERE SectionId = @Id;
             """;
-        return (await db.QueryAsync(sql + SelectSql + " WHERE SectionId = @Id;", p =>
+        return (await db.QueryAsync(sql + SelectSql + " WHERE cs.SectionId = @Id;", p =>
         {
             AdminSql.Add(p, "@Id", SqlDbType.BigInt, id);
         AdminSql.Add(p, "@CourseId", SqlDbType.Int, request.CourseId);
@@ -75,5 +75,6 @@ public sealed class AdminCourseSectionRepository(IDbConnectionFactory factory) :
         r.GetFieldValue<string>(r.GetOrdinal("SectionCode")),
         AdminSql.Text(r, "SectionName"),
         AdminSql.Nullable<int>(r, "MaxStudents"),
-        r.GetFieldValue<byte>(r.GetOrdinal("Status")));
+        r.GetFieldValue<byte>(r.GetOrdinal("Status")),
+        r.GetFieldValue<int>(r.GetOrdinal("EnrolledCount")));
 }

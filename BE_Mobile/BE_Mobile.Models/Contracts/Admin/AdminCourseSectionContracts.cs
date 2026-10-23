@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 namespace BE_Mobile.Contracts.Admin;
 
-public sealed record AdminCourseSectionDto(long SectionId, int CourseId, int SemesterId, string SectionCode, string? SectionName, int? MaxStudents, byte Status);
+public sealed record AdminCourseSectionDto(long SectionId, int CourseId, int SemesterId, string SectionCode, string? SectionName, int? MaxStudents, byte Status, int EnrolledCount);
 
 public sealed class SaveAdminCourseSectionRequest
 {

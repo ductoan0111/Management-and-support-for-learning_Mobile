@@ -8,7 +8,13 @@ import {
   UserCog,
   Users,
 } from "lucide-react";
-import { BooleanBadge, CurrentBadge, StatusBadge } from "../components/admin/Badges";
+import {
+  BooleanBadge,
+  CurrentBadge,
+  StatusBadge,
+} from "../components/admin/Badges";
+import type { ResourceConfig } from "../types/admin";
+import { labelFromLookup, optionsFromRecords } from "../utils/adminDisplay";
 import {
   activeOptions,
   currentOptions,
@@ -17,8 +23,6 @@ import {
   studentStatusOptions,
   teacherStatusOptions,
 } from "./adminOptions";
-import type { ResourceConfig } from "../types/admin";
-import { labelFromLookup, optionsFromRecords } from "../utils/adminDisplay";
 
 const currentYear = new Date().getFullYear();
 const today = new Date().toISOString().slice(0, 10);
@@ -145,7 +149,10 @@ export const resourceConfigs: ResourceConfig[] = [
         key: "status",
         label: "Trạng thái",
         render: (row) => (
-          <StatusBadge value={row.status} labels={{ 0: "Tạm khóa", 1: "Đang học" }} />
+          <StatusBadge
+            value={row.status}
+            labels={{ 0: "Tạm khóa", 1: "Đang học" }}
+          />
         ),
       },
     ],
@@ -158,7 +165,12 @@ export const resourceConfigs: ResourceConfig[] = [
         min: 1,
         createOnly: true,
       },
-      { key: "studentCode", label: "Mã sinh viên", kind: "text", required: true },
+      {
+        key: "studentCode",
+        label: "Mã sinh viên",
+        kind: "text",
+        required: true,
+      },
       {
         key: "academicClassId",
         label: "Lớp hành chính",
@@ -178,7 +190,10 @@ export const resourceConfigs: ResourceConfig[] = [
         required: true,
         valueType: "number",
         getOptions: (lookups) =>
-          optionsFromRecords(lookups.majors, "majorId", ["majorCode", "majorName"]),
+          optionsFromRecords(lookups.majors, "majorId", [
+            "majorCode",
+            "majorName",
+          ]),
       },
       {
         key: "enrollmentYear",
@@ -195,10 +210,34 @@ export const resourceConfigs: ResourceConfig[] = [
         valueType: "number",
         getOptions: () => studentStatusOptions,
       },
-      { key: "fullName", label: "Họ tên", kind: "text", optional: true, editOnly: true },
-      { key: "email", label: "Email", kind: "text", optional: true, editOnly: true },
-      { key: "phone", label: "Số điện thoại", kind: "text", optional: true, editOnly: true },
-      { key: "dateOfBirth", label: "Ngày sinh", kind: "date", optional: true, editOnly: true },
+      {
+        key: "fullName",
+        label: "Họ tên",
+        kind: "text",
+        optional: true,
+        editOnly: true,
+      },
+      {
+        key: "email",
+        label: "Email",
+        kind: "text",
+        optional: true,
+        editOnly: true,
+      },
+      {
+        key: "phone",
+        label: "Số điện thoại",
+        kind: "text",
+        optional: true,
+        editOnly: true,
+      },
+      {
+        key: "dateOfBirth",
+        label: "Ngày sinh",
+        kind: "date",
+        optional: true,
+        editOnly: true,
+      },
       {
         key: "gender",
         label: "Giới tính",
@@ -208,8 +247,19 @@ export const resourceConfigs: ResourceConfig[] = [
         valueType: "number",
         getOptions: () => genderOptions,
       },
-      { key: "avatarUrl", label: "Ảnh đại diện", kind: "text", optional: true, editOnly: true },
-      { key: "isActive", label: "Tài khoản hoạt động", kind: "checkbox", editOnly: true },
+      {
+        key: "avatarUrl",
+        label: "Ảnh đại diện",
+        kind: "text",
+        optional: true,
+        editOnly: true,
+      },
+      {
+        key: "isActive",
+        label: "Tài khoản hoạt động",
+        kind: "checkbox",
+        editOnly: true,
+      },
     ],
     defaultValues: {
       userId: "",
@@ -227,12 +277,19 @@ export const resourceConfigs: ResourceConfig[] = [
       isActive: true,
     },
     filters: [
-      { key: "status", label: "Trạng thái", getOptions: () => studentStatusOptions },
+      {
+        key: "status",
+        label: "Trạng thái",
+        getOptions: () => studentStatusOptions,
+      },
       {
         key: "majorId",
         label: "Ngành",
         getOptions: (lookups) =>
-          optionsFromRecords(lookups.majors, "majorId", ["majorCode", "majorName"]),
+          optionsFromRecords(lookups.majors, "majorId", [
+            "majorCode",
+            "majorName",
+          ]),
       },
       {
         key: "academicClassId",
@@ -268,10 +325,13 @@ export const resourceConfigs: ResourceConfig[] = [
         key: "departmentId",
         label: "Khoa",
         render: (row, lookups) =>
-          labelFromLookup(lookups, "departments", "departmentId", row.departmentId, [
-            "departmentCode",
-            "departmentName",
-          ]),
+          labelFromLookup(
+            lookups,
+            "departments",
+            "departmentId",
+            row.departmentId,
+            ["departmentCode", "departmentName"],
+          ),
       },
       { key: "academicTitle", label: "Học hàm" },
       { key: "specialization", label: "Chuyên môn" },
@@ -279,7 +339,10 @@ export const resourceConfigs: ResourceConfig[] = [
         key: "status",
         label: "Trạng thái",
         render: (row) => (
-          <StatusBadge value={row.status} labels={{ 0: "Ngưng", 1: "Đang dạy" }} />
+          <StatusBadge
+            value={row.status}
+            labels={{ 0: "Ngưng", 1: "Đang dạy" }}
+          />
         ),
       },
     ],
@@ -294,7 +357,12 @@ export const resourceConfigs: ResourceConfig[] = [
         getOptions: (lookups) =>
           optionsFromRecords(lookups.users, "userId", ["username", "fullName"]),
       },
-      { key: "teacherCode", label: "Mã giảng viên", kind: "text", required: true },
+      {
+        key: "teacherCode",
+        label: "Mã giảng viên",
+        kind: "text",
+        required: true,
+      },
       {
         key: "departmentId",
         label: "Khoa",
@@ -308,7 +376,12 @@ export const resourceConfigs: ResourceConfig[] = [
           ]),
       },
       { key: "academicTitle", label: "Học hàm", kind: "text", optional: true },
-      { key: "specialization", label: "Chuyên môn", kind: "textarea", optional: true },
+      {
+        key: "specialization",
+        label: "Chuyên môn",
+        kind: "textarea",
+        optional: true,
+      },
       {
         key: "status",
         label: "Trạng thái",
@@ -336,7 +409,11 @@ export const resourceConfigs: ResourceConfig[] = [
             "departmentName",
           ]),
       },
-      { key: "status", label: "Trạng thái", getOptions: () => teacherStatusOptions },
+      {
+        key: "status",
+        label: "Trạng thái",
+        getOptions: () => teacherStatusOptions,
+      },
     ],
   },
   {
@@ -359,7 +436,12 @@ export const resourceConfigs: ResourceConfig[] = [
     ],
     fields: [
       { key: "departmentCode", label: "Mã khoa", kind: "text", required: true },
-      { key: "departmentName", label: "Tên khoa", kind: "text", required: true },
+      {
+        key: "departmentName",
+        label: "Tên khoa",
+        kind: "text",
+        required: true,
+      },
       { key: "description", label: "Mô tả", kind: "textarea", optional: true },
       { key: "isActive", label: "Hoạt động", kind: "checkbox" },
     ],
@@ -369,7 +451,9 @@ export const resourceConfigs: ResourceConfig[] = [
       description: "",
       isActive: true,
     },
-    filters: [{ key: "isActive", label: "Trạng thái", getOptions: () => activeOptions }],
+    filters: [
+      { key: "isActive", label: "Trạng thái", getOptions: () => activeOptions },
+    ],
   },
   {
     key: "majors",
@@ -386,10 +470,13 @@ export const resourceConfigs: ResourceConfig[] = [
         key: "departmentId",
         label: "Khoa",
         render: (row, lookups) =>
-          labelFromLookup(lookups, "departments", "departmentId", row.departmentId, [
-            "departmentCode",
-            "departmentName",
-          ]),
+          labelFromLookup(
+            lookups,
+            "departments",
+            "departmentId",
+            row.departmentId,
+            ["departmentCode", "departmentName"],
+          ),
       },
       {
         key: "isActive",
@@ -471,7 +558,10 @@ export const resourceConfigs: ResourceConfig[] = [
         required: true,
         valueType: "number",
         getOptions: (lookups) =>
-          optionsFromRecords(lookups.majors, "majorId", ["majorCode", "majorName"]),
+          optionsFromRecords(lookups.majors, "majorId", [
+            "majorCode",
+            "majorName",
+          ]),
       },
       { key: "classCode", label: "Mã lớp", kind: "text", required: true },
       { key: "className", label: "Tên lớp", kind: "text", required: true },
@@ -504,7 +594,10 @@ export const resourceConfigs: ResourceConfig[] = [
         key: "majorId",
         label: "Ngành",
         getOptions: (lookups) =>
-          optionsFromRecords(lookups.majors, "majorId", ["majorCode", "majorName"]),
+          optionsFromRecords(lookups.majors, "majorId", [
+            "majorCode",
+            "majorName",
+          ]),
       },
       { key: "isActive", label: "Trạng thái", getOptions: () => activeOptions },
     ],
@@ -525,10 +618,13 @@ export const resourceConfigs: ResourceConfig[] = [
         key: "departmentId",
         label: "Khoa",
         render: (row, lookups) =>
-          labelFromLookup(lookups, "departments", "departmentId", row.departmentId, [
-            "departmentCode",
-            "departmentName",
-          ]),
+          labelFromLookup(
+            lookups,
+            "departments",
+            "departmentId",
+            row.departmentId,
+            ["departmentCode", "departmentName"],
+          ),
       },
       {
         key: "isActive",
@@ -605,7 +701,12 @@ export const resourceConfigs: ResourceConfig[] = [
     ],
     fields: [
       { key: "semesterCode", label: "Mã học kỳ", kind: "text", required: true },
-      { key: "semesterName", label: "Tên học kỳ", kind: "text", required: true },
+      {
+        key: "semesterName",
+        label: "Tên học kỳ",
+        kind: "text",
+        required: true,
+      },
       {
         key: "academicYear",
         label: "Năm học",
@@ -625,7 +726,9 @@ export const resourceConfigs: ResourceConfig[] = [
       endDate: today,
       isCurrent: false,
     },
-    filters: [{ key: "isCurrent", label: "Hiện tại", getOptions: () => currentOptions }],
+    filters: [
+      { key: "isCurrent", label: "Hiện tại", getOptions: () => currentOptions },
+    ],
   },
   {
     key: "courseSections",
@@ -656,12 +759,23 @@ export const resourceConfigs: ResourceConfig[] = [
             "semesterName",
           ]),
       },
-      { key: "maxStudents", label: "Sĩ số" },
+      {
+        key: "maxStudents",
+        label: "Sĩ số",
+        render: (row) => (
+          <span>
+            {row.enrolledCount ?? 0}/{row.maxStudents ?? "—"}
+          </span>
+        ),
+      },
       {
         key: "status",
         label: "Trạng thái",
         render: (row) => (
-          <StatusBadge value={row.status} labels={{ 0: "Đóng", 1: "Mở", 2: "Kết thúc" }} />
+          <StatusBadge
+            value={row.status}
+            labels={{ 0: "Đóng", 1: "Mở", 2: "Kết thúc" }}
+          />
         ),
       },
     ],
@@ -673,7 +787,10 @@ export const resourceConfigs: ResourceConfig[] = [
         required: true,
         valueType: "number",
         getOptions: (lookups) =>
-          optionsFromRecords(lookups.courses, "courseId", ["courseCode", "courseName"]),
+          optionsFromRecords(lookups.courses, "courseId", [
+            "courseCode",
+            "courseName",
+          ]),
       },
       {
         key: "semesterId",
@@ -687,9 +804,20 @@ export const resourceConfigs: ResourceConfig[] = [
             "semesterName",
           ]),
       },
-      { key: "sectionCode", label: "Mã lớp học phần", kind: "text", required: true },
+      {
+        key: "sectionCode",
+        label: "Mã lớp học phần",
+        kind: "text",
+        required: true,
+      },
       { key: "sectionName", label: "Tên lớp", kind: "text", optional: true },
-      { key: "maxStudents", label: "Sĩ số tối đa", kind: "number", optional: true, min: 1 },
+      {
+        key: "maxStudents",
+        label: "Sĩ số tối đa",
+        kind: "number",
+        optional: true,
+        min: 1,
+      },
       {
         key: "status",
         label: "Trạng thái",
@@ -712,7 +840,10 @@ export const resourceConfigs: ResourceConfig[] = [
         key: "courseId",
         label: "Môn học",
         getOptions: (lookups) =>
-          optionsFromRecords(lookups.courses, "courseId", ["courseCode", "courseName"]),
+          optionsFromRecords(lookups.courses, "courseId", [
+            "courseCode",
+            "courseName",
+          ]),
       },
       {
         key: "semesterId",
@@ -723,7 +854,11 @@ export const resourceConfigs: ResourceConfig[] = [
             "semesterName",
           ]),
       },
-      { key: "status", label: "Trạng thái", getOptions: () => sectionStatusOptions },
+      {
+        key: "status",
+        label: "Trạng thái",
+        getOptions: () => sectionStatusOptions,
+      },
     ],
   },
 ];
